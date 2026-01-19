@@ -28,6 +28,26 @@ const REWRITE_SAMPLE = {
   content: "Led a cross-functional team of 8 engineers in migrating legacy infrastructure to AWS, resulting in a 40% reduction in operational costs and 99.99% uptime.",
 };
 
+// Logo Component
+const DisCreadisLogo = () => (
+  <div className="flex flex-col gap-[1px]">
+    <div className="flex gap-[1px]">
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">D</div>
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">I</div>
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">S</div>
+    </div>
+    <div className="flex gap-[1px]">
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">C</div>
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">R</div>
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">E</div>
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">A</div>
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">D</div>
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">I</div>
+      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">S</div>
+    </div>
+  </div>
+);
+
 export default function Home() {
   const [state, setState] = useState<AppState>("idle");
 
@@ -43,6 +63,17 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [state]);
+
+  // Helper to get highlight class based on state
+  const getHighlightClass = (type: 'warm' | 'cool' | 'neutral') => {
+    if (state !== 'complete') return '';
+    
+    switch (type) {
+      case 'warm': return 'bg-[#FDF8EE] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000';
+      case 'cool': return 'bg-[#F0F6FA] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000';
+      case 'neutral': return 'bg-transparent transition-colors duration-1000';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex font-sans selection:bg-gray-200">
@@ -97,17 +128,20 @@ export default function Home() {
                 {/* Document Mockup */}
                 <div className="flex-1 p-8 overflow-y-auto font-serif text-gray-800 select-none bg-white">
                   {/* CV Header */}
-                  <div className="border-b border-gray-300 pb-6 mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-1">Alex Morgan</h1>
-                    <div className="flex gap-4 text-xs text-gray-500 font-sans uppercase tracking-wide">
-                      <span>San Francisco, CA</span>
-                      <span>•</span>
-                      <span>alex.morgan@example.com</span>
+                  <div className="flex justify-between items-start border-b border-gray-300 pb-6 mb-6">
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900 mb-1">Alex Morgan</h1>
+                      <div className="flex gap-4 text-xs text-gray-500 font-sans uppercase tracking-wide">
+                        <span>San Francisco, CA</span>
+                        <span>•</span>
+                        <span>alex.morgan@example.com</span>
+                      </div>
                     </div>
+                    <DisCreadisLogo />
                   </div>
 
                   {/* Summary */}
-                  <div className="mb-8">
+                  <div className={`mb-6 ${getHighlightClass('neutral')}`}>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">Professional Summary</h3>
                     <p className="text-[10px] leading-relaxed text-gray-600">
                       Senior Software Engineer with 7+ years of experience in distributed systems and cloud architecture. Proven track record of leading cross-functional teams and delivering scalable solutions, enhancing system reliability and reducing operational costs.
@@ -115,11 +149,11 @@ export default function Home() {
                   </div>
 
                   {/* Experience Section */}
-                  <div className="mb-8">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Experience</h3>
+                  <div className="mb-4">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Experience</h3>
                     
-                    {/* Job 1 */}
-                    <div className="mb-6">
+                    {/* Job 1 - Warm Highlight (Key Relevance) */}
+                    <div className={`mb-6 ${getHighlightClass('warm')}`}>
                       <div className="flex justify-between items-baseline mb-1">
                         <h4 className="text-sm font-bold text-gray-800">Senior Tech Lead</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2021 — Present</span>
@@ -132,8 +166,8 @@ export default function Home() {
                       </ul>
                     </div>
 
-                    {/* Job 2 */}
-                    <div className="mb-6">
+                    {/* Job 2 - Cool Highlight (Good Context) */}
+                    <div className={`mb-6 ${getHighlightClass('cool')}`}>
                       <div className="flex justify-between items-baseline mb-1">
                         <h4 className="text-sm font-bold text-gray-800">Software Engineer</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2018 — 2021</span>
@@ -146,8 +180,8 @@ export default function Home() {
                       </ul>
                     </div>
 
-                    {/* Job 3 */}
-                    <div className="mb-6">
+                    {/* Job 3 - Warm Highlight */}
+                    <div className={`mb-6 ${getHighlightClass('warm')}`}>
                       <div className="flex justify-between items-baseline mb-1">
                         <h4 className="text-sm font-bold text-gray-800">Junior Developer</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2016 — 2018</span>
@@ -160,8 +194,8 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Education Section */}
-                  <div className="mb-8">
+                  {/* Education Section - Neutral */}
+                  <div className={`mb-6 ${getHighlightClass('neutral')}`}>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Education</h3>
                     <div className="flex justify-between items-baseline mb-1">
                       <h4 className="text-sm font-bold text-gray-800">B.S. Computer Science</h4>
