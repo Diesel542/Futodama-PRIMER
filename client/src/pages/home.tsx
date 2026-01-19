@@ -30,20 +30,20 @@ const REWRITE_SAMPLE = {
 
 // Logo Component
 const DisCreadisLogo = () => (
-  <div className="flex flex-col gap-[1px]">
-    <div className="flex gap-[1px]">
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">D</div>
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">I</div>
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">S</div>
+  <div className="flex flex-col gap-[0.5px]">
+    <div className="flex gap-[0.5px]">
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">D</div>
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">I</div>
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">S</div>
     </div>
-    <div className="flex gap-[1px]">
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">C</div>
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">R</div>
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">E</div>
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">A</div>
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">D</div>
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">I</div>
-      <div className="w-6 h-6 bg-[#1a3a2a] text-white flex items-center justify-center text-[10px] font-bold font-sans">S</div>
+    <div className="flex gap-[0.5px]">
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">C</div>
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">R</div>
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">E</div>
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">A</div>
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">D</div>
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">I</div>
+      <div className="w-3 h-3 bg-[#1a3a2a] text-white flex items-center justify-center text-[5px] font-bold font-sans">S</div>
     </div>
   </div>
 );
@@ -69,8 +69,8 @@ export default function Home() {
     if (state !== 'complete') return '';
     
     switch (type) {
-      case 'warm': return 'bg-[#FDF8EE] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000';
-      case 'cool': return 'bg-[#F0F6FA] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000';
+      case 'warm': return 'bg-[#FDF6E3] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent shadow-[0_0_15px_rgba(253,246,227,0.5)]';
+      case 'cool': return 'bg-[#EBF5FB] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent shadow-[0_0_15px_rgba(235,245,251,0.5)]';
       case 'neutral': return 'bg-transparent transition-colors duration-1000';
     }
   };
