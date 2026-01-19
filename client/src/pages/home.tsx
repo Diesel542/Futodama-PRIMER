@@ -15,12 +15,9 @@ interface Suggestion {
 }
 
 // Mock Data
-const MOCK_STRENGTHS = [
-  "Strong technical leadership in distributed systems.",
-  "Clear progression of responsibility over 5 years.",
-  "Effective use of metrics to demonstrate impact.",
-  "Consistent history of mentoring junior engineers.",
-  "Excellent communication of cross-functional projects.",
+const MOCK_STRENGTHS_PARAGRAPHS = [
+  "Alex demonstrates exceptional technical leadership, particularly in architecting and migrating complex distributed systems. His tenure at Nexus Cloud Solutions highlights a clear trajectory of increasing responsibility, culminating in a significant role where he spearheaded critical infrastructure changes that directly impacted business metrics like cost and uptime.",
+  "Beyond technical execution, Alex shows a strong commitment to team growth and engineering culture. His involvement in mentoring junior developers, contributing to open source, and engaging with the wider tech community through speaking and writing evidences a well-rounded senior engineer who elevates those around him."
 ];
 
 const MOCK_SUGGESTIONS: Suggestion[] = [
@@ -424,19 +421,19 @@ export default function Home() {
                     <Check className="w-3.5 h-3.5 text-gray-400" />
                     Strengths Observed
                   </motion.h2>
-                  <ul className="space-y-3">
-                    {MOCK_STRENGTHS.map((item, i) => (
-                      <motion.li 
+                  <div className="space-y-4">
+                    {MOCK_STRENGTHS_PARAGRAPHS.map((paragraph, i) => (
+                      <motion.p 
                         key={i}
                         initial={{ opacity: 0, x: 10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.2 + (i * 0.1) }}
-                        className="text-sm text-gray-700 pl-4 border-l-2 border-gray-100 flex items-start leading-relaxed"
+                        className="text-sm text-gray-700 leading-relaxed border-l-2 border-gray-100 pl-4"
                       >
-                        {item}
-                      </motion.li>
+                        {paragraph}
+                      </motion.p>
                     ))}
-                  </ul>
+                  </div>
                 </section>
 
                 {/* Section 2: Suggestions */}
