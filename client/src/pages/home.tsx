@@ -430,29 +430,6 @@ export default function Home() {
                   </ul>
                 </section>
 
-                {/* Section 3: Rewrite Sample */}
-                <section>
-                  <motion.h2 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.2 }}
-                    className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4"
-                  >
-                    Optional Rewrite Sample
-                  </motion.h2>
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.3 }}
-                    className="bg-gray-50 rounded-lg p-5 border border-gray-200/60"
-                  >
-                    <div className="text-xs text-gray-400 mb-2 font-mono uppercase tracking-wider">{REWRITE_SAMPLE.label}</div>
-                    <p className="font-mono text-xs text-gray-600 leading-relaxed">
-                      {REWRITE_SAMPLE.content}
-                    </p>
-                  </motion.div>
-                </section>
-
                 {/* CTA */}
                 <motion.div 
                   initial={{ opacity: 0 }}
