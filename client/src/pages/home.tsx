@@ -525,9 +525,9 @@ export default function Home() {
                   transition={{ delay: 2.0 }}
                   className="pt-8 pb-12"
                 >
-                  <button className="group flex items-center gap-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 transition-all px-6 py-3 rounded-md shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                  <button className="group flex items-center gap-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all px-6 py-3 rounded-md shadow-sm hover:shadow-md hover:-translate-y-0.5">
                     Suggest role alignment draft
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-white group-hover:translate-x-0.5 transition-transform" />
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 </motion.div>
 
