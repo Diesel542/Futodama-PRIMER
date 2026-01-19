@@ -102,7 +102,7 @@ export default function Home() {
     
     switch (type) {
       case 'warm': return 'bg-[#FDF6E3] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent shadow-[0_0_15px_rgba(253,246,227,0.5)]';
-      case 'cool': return 'bg-[#EBF5FB] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent shadow-[0_0_15px_rgba(235,245,251,0.5)]';
+      case 'cool': return 'bg-[#E8F5E9] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent shadow-[0_0_15px_rgba(232,245,233,0.5)]';
       case 'neutral': return 'bg-transparent transition-colors duration-1000';
     }
   };
