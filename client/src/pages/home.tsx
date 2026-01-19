@@ -142,6 +142,20 @@ export default function Home() {
                       <ul className="list-disc list-outside ml-3 space-y-1">
                         <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Developed real-time data processing pipelines using Apache Kafka.</li>
                         <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Collaborated with product teams to define API specifications.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Improved test coverage from 65% to 90% using Jest and Cypress.</li>
+                      </ul>
+                    </div>
+
+                    {/* Job 3 */}
+                    <div className="mb-6">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-800">Junior Developer</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2016 — 2018</span>
+                      </div>
+                      <div className="text-[11px] text-gray-600 italic mb-2">StartUp Inc.</div>
+                      <ul className="list-disc list-outside ml-3 space-y-1">
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Built responsive front-end components using React and Redux.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Assisted in database schema design and optimization.</li>
                       </ul>
                     </div>
                   </div>
@@ -153,7 +167,38 @@ export default function Home() {
                       <h4 className="text-sm font-bold text-gray-800">B.S. Computer Science</h4>
                       <span className="text-[10px] text-gray-500 font-sans">2014 — 2018</span>
                     </div>
-                    <div className="text-[11px] text-gray-600 italic">University of Technology, Seattle</div>
+                    <div className="text-[11px] text-gray-600 italic mb-4">University of Technology, Seattle</div>
+                    
+                    <div className="flex justify-between items-baseline mb-1">
+                      <h4 className="text-sm font-bold text-gray-800">Cloud Architecture Certificate</h4>
+                      <span className="text-[10px] text-gray-500 font-sans">2022</span>
+                    </div>
+                    <div className="text-[11px] text-gray-600 italic">AWS Certification Program</div>
+                  </div>
+
+                  {/* Projects Section */}
+                  <div className="mb-8">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Projects</h3>
+                    
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-800">OpenSource Contributor</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2020 — Present</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600">
+                        Active contributor to several popular React ecosystem libraries. Maintained documentation and implemented accessibility fixes.
+                      </p>
+                    </div>
+
+                     <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-800">Tech Blog Author</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2019 — Present</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600">
+                        Writing weekly articles about distributed systems, cloud architecture, and engineering leadership.
+                      </p>
+                    </div>
                   </div>
 
                    {/* Skills Section */}
