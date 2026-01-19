@@ -6,6 +6,14 @@ import { cn } from "@/lib/utils";
 // Types
 type AppState = "idle" | "scanning" | "complete";
 
+type SuggestionStatus = "pending" | "accepted" | "declined";
+
+interface Suggestion {
+  id: string;
+  title: string;
+  proposal: string;
+}
+
 // Mock Data
 const MOCK_STRENGTHS = [
   "Strong technical leadership in distributed systems.",
@@ -15,18 +23,33 @@ const MOCK_STRENGTHS = [
   "Excellent communication of cross-functional projects.",
 ];
 
-const MOCK_SUGGESTIONS = [
-  "Quantify the outcome of the cloud migration project.",
-  "Condense the 'Skills' section to focus on core competencies.",
-  "Clarify your specific role in the 2024 architecture overhaul.",
-  "Align terminology with standard industry role descriptions.",
-  "Add a brief summary statement at the top.",
+const MOCK_SUGGESTIONS: Suggestion[] = [
+  {
+    id: "1",
+    title: "Quantify the outcome of the cloud migration project.",
+    proposal: "Add metrics: '...resulting in 40% cost reduction and 99.99% uptime.'"
+  },
+  {
+    id: "2",
+    title: "Condense the 'Skills' section to focus on core competencies.",
+    proposal: "Group skills by category (Languages, Infrastructure, Tools) and remove outdated technologies."
+  },
+  {
+    id: "3",
+    title: "Clarify your specific role in the 2024 architecture overhaul.",
+    proposal: "Specify: 'Designed and implemented the event-driven architecture using Kafka...'"
+  },
+  {
+    id: "4",
+    title: "Align terminology with standard industry role descriptions.",
+    proposal: "Change 'Tech Lead' to 'Staff Software Engineer' to better reflect scope."
+  },
+  {
+    id: "5",
+    title: "Add a brief summary statement at the top.",
+    proposal: "Draft: 'Senior Engineer with 7+ years experience in distributed systems...'"
+  }
 ];
-
-const REWRITE_SAMPLE = {
-  label: "Experience: Tech Lead",
-  content: "Led a cross-functional team of 8 engineers in migrating legacy infrastructure to AWS, resulting in a 40% reduction in operational costs and 99.99% uptime.",
-};
 
 // Logo Component
 const DisCreadisLogo = () => (
@@ -50,9 +73,21 @@ const DisCreadisLogo = () => (
 
 export default function Home() {
   const [state, setState] = useState<AppState>("idle");
+  const [suggestionStates, setSuggestionStates] = useState<Record<string, SuggestionStatus>>({});
+  const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
 
   const handleUpload = () => {
     setState("scanning");
+  };
+
+  const handleSuggestionClick = (id: string) => {
+    setExpandedSuggestion(expandedSuggestion === id ? null : id);
+  };
+
+  const handleAction = (id: string, action: "accepted" | "declined", e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSuggestionStates(prev => ({ ...prev, [id]: action }));
+    setExpandedSuggestion(null);
   };
 
   useEffect(() => {
@@ -416,17 +451,73 @@ export default function Home() {
                     Suggestions for improvement
                   </motion.h2>
                   <ul className="space-y-3">
-                    {MOCK_SUGGESTIONS.map((item, i) => (
-                      <motion.li 
-                        key={i}
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.7 + (i * 0.1) }}
-                        className="text-sm text-gray-700 pl-4 border-l-2 border-blue-100/50 flex items-start leading-relaxed"
-                      >
-                        {item}
-                      </motion.li>
-                    ))}
+                    {MOCK_SUGGESTIONS.map((item, i) => {
+                      const status = suggestionStates[item.id] || "pending";
+                      const isExpanded = expandedSuggestion === item.id;
+                      const isHandled = status !== "pending";
+
+                      if (status === "declined") return null;
+
+                      return (
+                        <motion.li 
+                          key={item.id}
+                          layout
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.7 + (i * 0.1) }}
+                          onClick={() => !isHandled && handleSuggestionClick(item.id)}
+                          className={cn(
+                            "text-sm relative pl-6 pr-4 py-3 rounded-md transition-all border",
+                            isHandled 
+                              ? "bg-green-50 border-green-100 text-green-800 cursor-default" 
+                              : "bg-white border-transparent hover:bg-gray-50 cursor-pointer hover:border-gray-200 hover:shadow-sm"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute left-2 top-4 w-1.5 h-1.5 rounded-full",
+                            isHandled ? "bg-green-500" : "bg-blue-400"
+                          )} />
+                          
+                          <div className="flex justify-between items-start gap-4">
+                            <span className={cn(isHandled && "font-medium")}>
+                              {item.title}
+                            </span>
+                            {isHandled && <Check className="w-4 h-4 text-green-600 mt-0.5" />}
+                          </div>
+
+                          <AnimatePresence>
+                            {isExpanded && !isHandled && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="pt-3 pb-1">
+                                  <div className="bg-gray-50 p-3 rounded text-xs font-mono text-gray-600 border border-gray-100 mb-3">
+                                    {item.proposal}
+                                  </div>
+                                  <div className="flex gap-2 justify-end">
+                                    <button 
+                                      onClick={(e) => handleAction(item.id, "declined", e)}
+                                      className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                                    >
+                                      Decline
+                                    </button>
+                                    <button 
+                                      onClick={(e) => handleAction(item.id, "accepted", e)}
+                                      className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded transition-colors shadow-sm"
+                                    >
+                                      Accept Change
+                                    </button>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.li>
+                      );
+                    })}
                   </ul>
                 </section>
 
