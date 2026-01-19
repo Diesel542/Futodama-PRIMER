@@ -201,6 +201,64 @@ export default function Home() {
                     </div>
                   </div>
 
+                  {/* Publications & Talks */}
+                  <div className="mb-8">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Publications & Talks</h3>
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-800">Scaling Microservices at Edge</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">KubeCon 2023</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600 italic">
+                        Speaker at KubeCon NA, discussing strategies for deploying and managing stateful workloads at the edge.
+                      </p>
+                    </div>
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-800">The Future of Serverless</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">QCon 2022</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600 italic">
+                        Panel discussion on the evolving landscape of serverless computing and its impact on developer velocity.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Volunteering */}
+                  <div className="mb-8">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Volunteering</h3>
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-800">Code for America</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2020 — 2022</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600">
+                        Contributed to open-source civic tech projects to help improve government services.
+                      </p>
+                    </div>
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-800">Tech Mentorship Program</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2019 — Present</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600">
+                        Mentoring underrepresented students in computer science to help them land their first internships.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Languages */}
+                  <div className="mb-8">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Languages</h3>
+                    <div className="flex gap-4 text-[10px] text-gray-600">
+                       <span>English (Native)</span>
+                       <span className="text-gray-300">|</span>
+                       <span>Spanish (Professional Working)</span>
+                       <span className="text-gray-300">|</span>
+                       <span>French (Basic)</span>
+                    </div>
+                  </div>
+
                    {/* Skills Section */}
                    <div className="mt-8">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Skills</h3>
