@@ -242,9 +242,9 @@ export default function Home() {
                     <div className="text-[11px] text-gray-600 italic">AWS Certification Program</div>
                   </div>
 
-                  {/* Projects Section */}
-                  <div className="mb-8">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Projects</h3>
+                  {/* Projects Section - Warm Highlight */}
+                  <div className={`mb-8 ${getHighlightClass('warm')}`}>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Projects</h3>
                     
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
@@ -267,9 +267,9 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Publications & Talks */}
-                  <div className="mb-8">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Publications & Talks</h3>
+                  {/* Publications & Talks - Warm Highlight */}
+                  <div className={`mb-8 ${getHighlightClass('warm')}`}>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Publications & Talks</h3>
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
                         <h4 className="text-sm font-bold text-gray-800">Scaling Microservices at Edge</h4>
@@ -290,9 +290,9 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Volunteering */}
-                  <div className="mb-8">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Volunteering</h3>
+                  {/* Volunteering - Cool Highlight */}
+                  <div className={`mb-8 ${getHighlightClass('cool')}`}>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Volunteering</h3>
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
                         <h4 className="text-sm font-bold text-gray-800">Code for America</h4>
