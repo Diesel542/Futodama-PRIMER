@@ -95,72 +95,78 @@ export default function Home() {
                 className="w-full h-full max-w-[500px] bg-white shadow-xl rounded-sm border border-gray-200 relative overflow-hidden flex flex-col"
               >
                 {/* Document Mockup */}
-                <div className="flex-1 p-8 overflow-y-auto font-serif text-gray-800 select-none">
+                <div className="flex-1 p-8 overflow-y-auto font-serif text-gray-800 select-none bg-white">
                   {/* CV Header */}
                   <div className="border-b border-gray-300 pb-6 mb-6">
-                    <div className="h-8 bg-gray-800 w-1/2 mb-3 rounded-sm opacity-90" />
-                    <div className="flex gap-4">
-                      <div className="h-3 bg-gray-400 w-1/4 rounded-sm" />
-                      <div className="h-3 bg-gray-400 w-1/4 rounded-sm" />
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">Alex Morgan</h1>
+                    <div className="flex gap-4 text-xs text-gray-500 font-sans uppercase tracking-wide">
+                      <span>San Francisco, CA</span>
+                      <span>•</span>
+                      <span>alex.morgan@example.com</span>
                     </div>
                   </div>
 
                   {/* Summary */}
-                  <div className="mb-8 space-y-2">
-                    <div className="h-4 bg-gray-200 w-full rounded-sm" />
-                    <div className="h-4 bg-gray-200 w-full rounded-sm" />
-                    <div className="h-4 bg-gray-200 w-3/4 rounded-sm" />
+                  <div className="mb-8">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">Professional Summary</h3>
+                    <p className="text-[10px] leading-relaxed text-gray-600">
+                      Senior Software Engineer with 7+ years of experience in distributed systems and cloud architecture. Proven track record of leading cross-functional teams and delivering scalable solutions, enhancing system reliability and reducing operational costs.
+                    </p>
                   </div>
 
                   {/* Experience Section */}
                   <div className="mb-8">
-                    <div className="h-4 bg-gray-300 w-1/4 mb-4 rounded-sm uppercase tracking-wider" />
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Experience</h3>
                     
                     {/* Job 1 */}
                     <div className="mb-6">
-                      <div className="flex justify-between mb-2">
-                        <div className="h-4 bg-gray-600 w-1/3 rounded-sm" />
-                        <div className="h-4 bg-gray-400 w-1/6 rounded-sm" />
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-800">Senior Tech Lead</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2021 — Present</span>
                       </div>
-                      <div className="h-3 bg-gray-500 w-1/4 mb-3 rounded-sm" />
-                      <div className="space-y-2 pl-4 border-l-2 border-gray-100">
-                        <div className="h-3 bg-gray-200 w-11/12 rounded-sm" />
-                        <div className="h-3 bg-gray-200 w-10/12 rounded-sm" />
-                        <div className="h-3 bg-gray-200 w-full rounded-sm" />
-                      </div>
+                      <div className="text-[11px] text-gray-600 italic mb-2">Nexus Cloud Solutions</div>
+                      <ul className="list-disc list-outside ml-3 space-y-1">
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Spearheaded the migration of legacy monolith to microservices architecture.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Mentored 5 junior developers, fostering a culture of code quality.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Reduced deployment time by 60% through CI/CD optimization.</li>
+                      </ul>
                     </div>
 
                     {/* Job 2 */}
                     <div className="mb-6">
-                      <div className="flex justify-between mb-2">
-                        <div className="h-4 bg-gray-600 w-1/3 rounded-sm" />
-                        <div className="h-4 bg-gray-400 w-1/6 rounded-sm" />
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-800">Software Engineer</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2018 — 2021</span>
                       </div>
-                      <div className="h-3 bg-gray-500 w-1/4 mb-3 rounded-sm" />
-                      <div className="space-y-2 pl-4 border-l-2 border-gray-100">
-                        <div className="h-3 bg-gray-200 w-full rounded-sm" />
-                        <div className="h-3 bg-gray-200 w-9/12 rounded-sm" />
-                      </div>
+                      <div className="text-[11px] text-gray-600 italic mb-2">DataFlow Systems</div>
+                      <ul className="list-disc list-outside ml-3 space-y-1">
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Developed real-time data processing pipelines using Apache Kafka.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Collaborated with product teams to define API specifications.</li>
+                      </ul>
                     </div>
                   </div>
 
                   {/* Education Section */}
-                  <div>
-                    <div className="h-4 bg-gray-300 w-1/4 mb-4 rounded-sm uppercase tracking-wider" />
-                    <div className="flex justify-between mb-2">
-                      <div className="h-4 bg-gray-600 w-1/3 rounded-sm" />
-                      <div className="h-4 bg-gray-400 w-1/6 rounded-sm" />
+                  <div className="mb-8">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Education</h3>
+                    <div className="flex justify-between items-baseline mb-1">
+                      <h4 className="text-sm font-bold text-gray-800">B.S. Computer Science</h4>
+                      <span className="text-[10px] text-gray-500 font-sans">2014 — 2018</span>
                     </div>
-                    <div className="h-3 bg-gray-500 w-1/2 rounded-sm" />
+                    <div className="text-[11px] text-gray-600 italic">University of Technology, Seattle</div>
                   </div>
 
                    {/* Skills Section */}
                    <div className="mt-8">
-                    <div className="h-4 bg-gray-300 w-1/4 mb-4 rounded-sm uppercase tracking-wider" />
-                    <div className="flex gap-2 flex-wrap">
-                      {[1,2,3,4,5,6,7].map(i => (
-                         <div key={i} className="h-6 bg-gray-100 w-16 rounded-sm" />
-                      ))}
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Skills</h3>
+                    <div className="flex gap-2 flex-wrap text-[10px] text-gray-600 font-sans">
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">React</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">Node.js</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">AWS</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">Docker</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">Kubernetes</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">Go</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">PostgreSQL</span>
                     </div>
                   </div>
                 </div>
