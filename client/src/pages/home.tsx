@@ -475,7 +475,7 @@ export default function Home() {
                         >
                           <div className={cn(
                             "absolute left-2 top-4 w-1.5 h-1.5 rounded-full",
-                            isHandled ? "bg-green-500" : "bg-blue-400"
+                            isHandled ? "bg-green-500" : "bg-amber-400"
                           )} />
                           
                           <div className="flex justify-between items-start gap-4">
