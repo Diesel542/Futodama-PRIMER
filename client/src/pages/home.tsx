@@ -92,31 +92,76 @@ export default function Home() {
                 key="preview"
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="w-full h-full max-w-[500px] bg-white shadow-lg rounded-sm border border-gray-200 relative overflow-hidden"
+                className="w-full h-full max-w-[500px] bg-white shadow-xl rounded-sm border border-gray-200 relative overflow-hidden flex flex-col"
               >
-                {/* Mock CV Content - Abstract Representation */}
-                <div className="p-8 space-y-6 opacity-60 grayscale">
-                  <div className="w-24 h-24 rounded-full bg-gray-200 mb-6" />
-                  <div className="h-6 bg-gray-200 w-2/3 mb-2" />
-                  <div className="h-4 bg-gray-100 w-1/3 mb-8" />
-                  
-                  <div className="space-y-3">
-                    <div className="h-4 bg-gray-100 w-full" />
-                    <div className="h-4 bg-gray-100 w-full" />
-                    <div className="h-4 bg-gray-100 w-5/6" />
-                  </div>
-                  
-                  <div className="space-y-3 pt-4">
-                    <div className="h-5 bg-gray-200 w-1/4 mb-2" />
-                    <div className="h-4 bg-gray-100 w-full" />
-                    <div className="h-4 bg-gray-100 w-full" />
-                    <div className="h-4 bg-gray-100 w-4/5" />
+                {/* Document Mockup */}
+                <div className="flex-1 p-8 overflow-y-auto font-serif text-gray-800 select-none">
+                  {/* CV Header */}
+                  <div className="border-b border-gray-300 pb-6 mb-6">
+                    <div className="h-8 bg-gray-800 w-1/2 mb-3 rounded-sm opacity-90" />
+                    <div className="flex gap-4">
+                      <div className="h-3 bg-gray-400 w-1/4 rounded-sm" />
+                      <div className="h-3 bg-gray-400 w-1/4 rounded-sm" />
+                    </div>
                   </div>
 
-                  <div className="space-y-3 pt-4">
-                    <div className="h-5 bg-gray-200 w-1/4 mb-2" />
-                    <div className="h-4 bg-gray-100 w-full" />
-                    <div className="h-4 bg-gray-100 w-full" />
+                  {/* Summary */}
+                  <div className="mb-8 space-y-2">
+                    <div className="h-4 bg-gray-200 w-full rounded-sm" />
+                    <div className="h-4 bg-gray-200 w-full rounded-sm" />
+                    <div className="h-4 bg-gray-200 w-3/4 rounded-sm" />
+                  </div>
+
+                  {/* Experience Section */}
+                  <div className="mb-8">
+                    <div className="h-4 bg-gray-300 w-1/4 mb-4 rounded-sm uppercase tracking-wider" />
+                    
+                    {/* Job 1 */}
+                    <div className="mb-6">
+                      <div className="flex justify-between mb-2">
+                        <div className="h-4 bg-gray-600 w-1/3 rounded-sm" />
+                        <div className="h-4 bg-gray-400 w-1/6 rounded-sm" />
+                      </div>
+                      <div className="h-3 bg-gray-500 w-1/4 mb-3 rounded-sm" />
+                      <div className="space-y-2 pl-4 border-l-2 border-gray-100">
+                        <div className="h-3 bg-gray-200 w-11/12 rounded-sm" />
+                        <div className="h-3 bg-gray-200 w-10/12 rounded-sm" />
+                        <div className="h-3 bg-gray-200 w-full rounded-sm" />
+                      </div>
+                    </div>
+
+                    {/* Job 2 */}
+                    <div className="mb-6">
+                      <div className="flex justify-between mb-2">
+                        <div className="h-4 bg-gray-600 w-1/3 rounded-sm" />
+                        <div className="h-4 bg-gray-400 w-1/6 rounded-sm" />
+                      </div>
+                      <div className="h-3 bg-gray-500 w-1/4 mb-3 rounded-sm" />
+                      <div className="space-y-2 pl-4 border-l-2 border-gray-100">
+                        <div className="h-3 bg-gray-200 w-full rounded-sm" />
+                        <div className="h-3 bg-gray-200 w-9/12 rounded-sm" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Education Section */}
+                  <div>
+                    <div className="h-4 bg-gray-300 w-1/4 mb-4 rounded-sm uppercase tracking-wider" />
+                    <div className="flex justify-between mb-2">
+                      <div className="h-4 bg-gray-600 w-1/3 rounded-sm" />
+                      <div className="h-4 bg-gray-400 w-1/6 rounded-sm" />
+                    </div>
+                    <div className="h-3 bg-gray-500 w-1/2 rounded-sm" />
+                  </div>
+
+                   {/* Skills Section */}
+                   <div className="mt-8">
+                    <div className="h-4 bg-gray-300 w-1/4 mb-4 rounded-sm uppercase tracking-wider" />
+                    <div className="flex gap-2 flex-wrap">
+                      {[1,2,3,4,5,6,7].map(i => (
+                         <div key={i} className="h-6 bg-gray-100 w-16 rounded-sm" />
+                      ))}
+                    </div>
                   </div>
                 </div>
 
