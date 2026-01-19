@@ -12,6 +12,7 @@ interface Suggestion {
   id: string;
   title: string;
   proposal: string;
+  sectionId?: string; // Link to CV section
 }
 
 // Mock Data
@@ -24,27 +25,44 @@ const MOCK_SUGGESTIONS: Suggestion[] = [
   {
     id: "1",
     title: "Quantify the outcome of the cloud migration project.",
-    proposal: "Add metrics: '...resulting in 40% cost reduction and 99.99% uptime.'"
+    proposal: "Add metrics: '...resulting in 40% cost reduction and 99.99% uptime.'",
+    sectionId: "job-1"
   },
   {
     id: "2",
     title: "Condense the 'Skills' section to focus on core competencies.",
-    proposal: "Group skills by category (Languages, Infrastructure, Tools) and remove outdated technologies."
+    proposal: "Group skills by category (Languages, Infrastructure, Tools) and remove outdated technologies.",
+    sectionId: "skills"
   },
   {
     id: "3",
     title: "Clarify your specific role in the 2024 architecture overhaul.",
-    proposal: "Specify: 'Designed and implemented the event-driven architecture using Kafka...'"
+    proposal: "Specify: 'Designed and implemented the event-driven architecture using Kafka...'",
+    sectionId: "job-1"
   },
   {
     id: "4",
     title: "Align terminology with standard industry role descriptions.",
-    proposal: "Change 'Tech Lead' to 'Staff Software Engineer' to better reflect scope."
+    proposal: "Change 'Tech Lead' to 'Staff Software Engineer' to better reflect scope.",
+    sectionId: "job-1"
   },
   {
     id: "5",
     title: "Add a brief summary statement at the top.",
-    proposal: "Draft: 'Senior Engineer with 7+ years experience in distributed systems...'"
+    proposal: "Draft: 'Senior Engineer with 7+ years experience in distributed systems...'",
+    sectionId: "summary"
+  },
+  {
+    id: "6",
+    title: "Highlight contribution to open source projects.",
+    proposal: "Mention specific PRs or libraries maintained.",
+    sectionId: "projects"
+  },
+  {
+    id: "7",
+    title: "Add specific conference details.",
+    proposal: "Include year and location for KubeCon talk.",
+    sectionId: "publications"
   }
 ];
 
@@ -97,10 +115,36 @@ export default function Home() {
   }, [state]);
 
   // Helper to get highlight class based on state
-  const getHighlightClass = (type: 'warm' | 'cool' | 'neutral') => {
+  const getHighlightClass = (type: 'warm' | 'cool' | 'neutral', sectionId?: string) => {
     if (state !== 'complete') return '';
     
-    switch (type) {
+    // Check if section has pending suggestions
+    let effectiveType = type;
+    
+    if (sectionId) {
+       // Find all suggestions related to this section
+       const relatedSuggestions = MOCK_SUGGESTIONS.filter(s => s.sectionId === sectionId);
+       
+       if (relatedSuggestions.length > 0) {
+         // Check if ANY related suggestion is accepted (could be ALL, but let's do ANY for immediate feedback)
+         // Actually user requirement: "As I accept changes... yellow sections should change to green"
+         // Logic: If ALL pending suggestions for this section are resolved (accepted), turn green.
+         // If there are unhandled suggestions, stay yellow.
+         
+         const hasUnhandled = relatedSuggestions.some(s => {
+           const status = suggestionStates[s.id];
+           return !status || status === 'pending'; // If any are pending, keep original color
+         });
+         
+         const hasAccepted = relatedSuggestions.some(s => suggestionStates[s.id] === 'accepted');
+
+         if (!hasUnhandled && hasAccepted) {
+            effectiveType = 'cool'; // Turn green if all tasks done
+         }
+       }
+    }
+    
+    switch (effectiveType) {
       case 'warm': return 'bg-[#FDF6E3] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent shadow-[0_0_15px_rgba(253,246,227,0.5)]';
       case 'cool': return 'bg-[#E8F5E9] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent shadow-[0_0_15px_rgba(232,245,233,0.5)]';
       case 'neutral': return 'bg-transparent transition-colors duration-1000';
@@ -173,7 +217,7 @@ export default function Home() {
                   </div>
 
                   {/* Summary */}
-                  <div className={`mb-6 ${getHighlightClass('neutral')}`}>
+                  <div className={`mb-6 ${getHighlightClass('neutral', 'summary')}`}>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">Professional Summary</h3>
                     <p className="text-[10px] leading-relaxed text-gray-600">
                       Senior Software Engineer with 7+ years of experience in distributed systems and cloud architecture. Proven track record of leading cross-functional teams and delivering scalable solutions, enhancing system reliability and reducing operational costs.
@@ -185,7 +229,7 @@ export default function Home() {
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Experience</h3>
                     
                     {/* Job 1 - Warm Highlight (Key Relevance) */}
-                    <div className={`mb-6 ${getHighlightClass('warm')}`}>
+                    <div className={`mb-6 ${getHighlightClass('warm', 'job-1')}`}>
                       <div className="flex justify-between items-baseline mb-1">
                         <h4 className="text-sm font-bold text-gray-600">Senior Tech Lead</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2021 — Present</span>
@@ -243,7 +287,7 @@ export default function Home() {
                   </div>
 
                   {/* Projects Section - Warm Highlight */}
-                  <div className={`mb-8 ${getHighlightClass('warm')}`}>
+                  <div className={`mb-8 ${getHighlightClass('warm', 'projects')}`}>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Projects</h3>
                     
                     <div className="mb-4">
@@ -268,7 +312,7 @@ export default function Home() {
                   </div>
 
                   {/* Publications & Talks - Warm Highlight */}
-                  <div className={`mb-8 ${getHighlightClass('warm')}`}>
+                  <div className={`mb-8 ${getHighlightClass('warm', 'publications')}`}>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Publications & Talks</h3>
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
@@ -326,7 +370,7 @@ export default function Home() {
                   </div>
 
                    {/* Skills Section */}
-                   <div className="mt-8">
+                   <div className={`mt-8 ${getHighlightClass('neutral', 'skills')}`}>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Skills</h3>
                     <div className="flex gap-2 flex-wrap text-[10px] text-gray-600 font-sans">
                       <span className="bg-gray-100 px-2 py-1 rounded-sm">React</span>
