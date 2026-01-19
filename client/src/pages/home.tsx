@@ -155,7 +155,7 @@ export default function Home() {
                 key="preview"
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="w-full h-full max-w-[500px] bg-white shadow-xl rounded-sm border border-gray-200 relative overflow-hidden flex flex-col"
+                className="w-full h-full max-w-[750px] bg-white shadow-xl rounded-sm border border-gray-200 relative overflow-hidden flex flex-col"
               >
                 {/* Document Mockup */}
                 <div className="flex-1 p-8 overflow-y-auto font-serif text-gray-800 select-none bg-white">
