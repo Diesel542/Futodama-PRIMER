@@ -63,6 +63,12 @@ const MOCK_SUGGESTIONS: Suggestion[] = [
     title: "Standardize formatting for early career roles.",
     proposal: "Ensure the 'Junior Developer' role follows the same bullet point structure as recent roles.",
     sectionId: "job-3"
+  },
+  {
+    id: "9",
+    title: "Add specific conference details.",
+    proposal: "Include year and location for KubeCon talk.",
+    sectionId: "publications"
   }
 ];
 
