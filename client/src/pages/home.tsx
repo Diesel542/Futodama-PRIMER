@@ -162,7 +162,7 @@ export default function Home() {
                   {/* CV Header */}
                   <div className="flex justify-between items-start border-b border-gray-300 pb-6 mb-6">
                     <div>
-                      <h1 className="text-2xl font-bold text-gray-900 mb-1">Alex Morgan</h1>
+                      <h1 className="text-2xl font-bold text-gray-600 mb-1">Alex Morgan</h1>
                       <div className="flex gap-4 text-xs text-gray-500 font-sans uppercase tracking-wide">
                         <span>San Francisco, CA</span>
                         <span>•</span>
@@ -187,7 +187,7 @@ export default function Home() {
                     {/* Job 1 - Warm Highlight (Key Relevance) */}
                     <div className={`mb-6 ${getHighlightClass('warm')}`}>
                       <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="text-sm font-bold text-gray-800">Senior Tech Lead</h4>
+                        <h4 className="text-sm font-bold text-gray-600">Senior Tech Lead</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2021 — Present</span>
                       </div>
                       <div className="text-[11px] text-gray-600 italic mb-2">Nexus Cloud Solutions</div>
@@ -201,7 +201,7 @@ export default function Home() {
                     {/* Job 2 - Cool Highlight (Good Context) */}
                     <div className={`mb-6 ${getHighlightClass('cool')}`}>
                       <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="text-sm font-bold text-gray-800">Software Engineer</h4>
+                        <h4 className="text-sm font-bold text-gray-600">Software Engineer</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2018 — 2021</span>
                       </div>
                       <div className="text-[11px] text-gray-600 italic mb-2">DataFlow Systems</div>
@@ -215,7 +215,7 @@ export default function Home() {
                     {/* Job 3 - Warm Highlight */}
                     <div className={`mb-6 ${getHighlightClass('warm')}`}>
                       <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="text-sm font-bold text-gray-800">Junior Developer</h4>
+                        <h4 className="text-sm font-bold text-gray-600">Junior Developer</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2016 — 2018</span>
                       </div>
                       <div className="text-[11px] text-gray-600 italic mb-2">StartUp Inc.</div>
@@ -230,13 +230,13 @@ export default function Home() {
                   <div className={`mb-6 ${getHighlightClass('neutral')}`}>
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Education</h3>
                     <div className="flex justify-between items-baseline mb-1">
-                      <h4 className="text-sm font-bold text-gray-800">B.S. Computer Science</h4>
+                      <h4 className="text-sm font-bold text-gray-600">B.S. Computer Science</h4>
                       <span className="text-[10px] text-gray-500 font-sans">2014 — 2018</span>
                     </div>
                     <div className="text-[11px] text-gray-600 italic mb-4">University of Technology, Seattle</div>
                     
                     <div className="flex justify-between items-baseline mb-1">
-                      <h4 className="text-sm font-bold text-gray-800">Cloud Architecture Certificate</h4>
+                      <h4 className="text-sm font-bold text-gray-600">Cloud Architecture Certificate</h4>
                       <span className="text-[10px] text-gray-500 font-sans">2022</span>
                     </div>
                     <div className="text-[11px] text-gray-600 italic">AWS Certification Program</div>
@@ -248,7 +248,7 @@ export default function Home() {
                     
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="text-sm font-bold text-gray-800">OpenSource Contributor</h4>
+                        <h4 className="text-sm font-bold text-gray-600">OpenSource Contributor</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2020 — Present</span>
                       </div>
                       <p className="text-[10px] leading-relaxed text-gray-600">
@@ -258,7 +258,7 @@ export default function Home() {
 
                      <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="text-sm font-bold text-gray-800">Tech Blog Author</h4>
+                        <h4 className="text-sm font-bold text-gray-600">Tech Blog Author</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2019 — Present</span>
                       </div>
                       <p className="text-[10px] leading-relaxed text-gray-600">
@@ -272,7 +272,7 @@ export default function Home() {
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Publications & Talks</h3>
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="text-sm font-bold text-gray-800">Scaling Microservices at Edge</h4>
+                        <h4 className="text-sm font-bold text-gray-600">Scaling Microservices at Edge</h4>
                         <span className="text-[10px] text-gray-500 font-sans">KubeCon 2023</span>
                       </div>
                       <p className="text-[10px] leading-relaxed text-gray-600 italic">
@@ -281,7 +281,7 @@ export default function Home() {
                     </div>
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="text-sm font-bold text-gray-800">The Future of Serverless</h4>
+                        <h4 className="text-sm font-bold text-gray-600">The Future of Serverless</h4>
                         <span className="text-[10px] text-gray-500 font-sans">QCon 2022</span>
                       </div>
                       <p className="text-[10px] leading-relaxed text-gray-600 italic">
@@ -295,7 +295,7 @@ export default function Home() {
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Volunteering</h3>
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="text-sm font-bold text-gray-800">Code for America</h4>
+                        <h4 className="text-sm font-bold text-gray-600">Code for America</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2020 — 2022</span>
                       </div>
                       <p className="text-[10px] leading-relaxed text-gray-600">
@@ -304,7 +304,7 @@ export default function Home() {
                     </div>
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="text-sm font-bold text-gray-800">Tech Mentorship Program</h4>
+                        <h4 className="text-sm font-bold text-gray-600">Tech Mentorship Program</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2019 — Present</span>
                       </div>
                       <p className="text-[10px] leading-relaxed text-gray-600">
