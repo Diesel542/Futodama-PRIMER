@@ -110,7 +110,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground flex font-sans selection:bg-gray-200">
       {/* Left Pane: CV Preview */}
-      <div className="w-1/2 h-screen p-8 border-r border-border flex flex-col relative overflow-hidden bg-gray-50/50">
+      <div className="w-[60%] h-screen p-8 border-r border-border flex flex-col relative overflow-hidden bg-gray-50/50">
         <header className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
              <div className="w-2 h-2 rounded-full bg-gray-400" />
@@ -363,7 +363,7 @@ export default function Home() {
       </div>
 
       {/* Right Pane: Analysis Results */}
-      <div className="w-1/2 h-screen overflow-y-auto bg-white">
+      <div className="w-[40%] h-screen overflow-y-auto bg-white">
         <div className="max-w-xl mx-auto p-12 pt-24">
           <AnimatePresence mode="wait">
             {state === "idle" ? (
