@@ -1,0 +1,87 @@
+REPLIT DESIGN PROMPT — “CV Health Check Micro-Gardener v0”
+
+Design a clean, minimal prototype for a very simple CV-analysis tool.
+The interface should feel familiar to HR/engineering managers (CREADIS context), with no exotic AI theatrics.
+It must look like a normal internal productivity tool — calm, structured, helpful.
+
+CORE FLOW
+
+User uploads a CV (PDF or DOCX).
+
+System shows a subtle “scanning” animation over a CV preview panel.
+
+After a few seconds, three clear sections appear:
+
+Strengths Observed (5 concise bullets)
+
+Suggestions for Improvement (5 concise bullets)
+
+Optional Rewrite Sample (one rewritten paragraph)
+
+At the bottom, include a quiet CTA button:
+
+“Suggest role alignment draft”
+
+This CTA should feel optional and non-threatening.
+
+LAYOUT REQUIREMENTS
+
+A single-page layout.
+
+Left: CV preview pane (scrollable).
+
+Right: Three stacked result boxes with gentle dividers.
+
+A subtle activity indicator that moves across the CV (e.g., a faint scanning bar).
+
+Use a neutral palette: greys, whites, one accent color.
+
+No scores, no grades, no ratings.
+
+The absence of scoring must feel intentional, not unfinished.
+
+TONE OF THE INTERFACE
+
+Professional, calm, helpful.
+
+No AI mascots, no quirky metaphors, no “Gardener” branding yet.
+
+This is a tool that should feel like it could already exist inside CREADIS today.
+
+COPY GUIDELINES
+
+Use plain enterprise language:
+
+“Upload CV”
+
+“Analyzing…”
+
+“Strengths observed”
+
+“Suggestions for improvement”
+
+“Optional rewrite sample”
+
+Avoid anything mystical, evaluative, or judgmental.
+
+INTERACTION DETAILS
+
+When the CV is uploaded, immediately show the scanning animation.
+
+After 3–6 seconds, fade in the three sections with a sense of quiet precision.
+
+The rewrite sample should appear in a code-block-style box with a light background.
+
+GOAL OF THIS DESIGN
+
+Create a tangible, low-risk, immediately valuable first iteration that:
+
+delivers instant insight,
+
+helps the user improve a CV,
+
+hints at deeper intelligence,
+
+does not scare enterprise stakeholders.
+
+Keep everything simple, legible, and grounded.
