@@ -59,10 +59,10 @@ const MOCK_SUGGESTIONS: Suggestion[] = [
     sectionId: "projects"
   },
   {
-    id: "7",
-    title: "Add specific conference details.",
-    proposal: "Include year and location for KubeCon talk.",
-    sectionId: "publications"
+    id: "8",
+    title: "Standardize formatting for early career roles.",
+    proposal: "Ensure the 'Junior Developer' role follows the same bullet point structure as recent roles.",
+    sectionId: "job-3"
   }
 ];
 
@@ -257,7 +257,7 @@ export default function Home() {
                     </div>
 
                     {/* Job 3 - Warm Highlight */}
-                    <div className={`mb-6 ${getHighlightClass('warm')}`}>
+                    <div className={`mb-6 ${getHighlightClass('warm', 'job-3')}`}>
                       <div className="flex justify-between items-baseline mb-1">
                         <h4 className="text-sm font-bold text-gray-600">Junior Developer</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2016 — 2018</span>
