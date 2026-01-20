@@ -537,7 +537,6 @@ export default function Home() {
                   
                   <div className="grid grid-cols-1 gap-4">
                   {[
-                    { label: "Impact & Metrics", desc: "Quantifiable achievements and results" },
                     { label: "Role Alignment", desc: "Consistency with target seniority level" },
                     { label: "Skills Relevance", desc: "Modern technology stack grouping" },
                     { label: "Visual Clarity", desc: "Scannability and professional formatting" }
@@ -600,7 +599,7 @@ export default function Home() {
                     className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-2"
                   >
                     <Check className="w-3.5 h-3.5 text-gray-400" />
-                    Strengths Observed
+                    What's working well
                   </motion.h2>
                   <div className="space-y-4">
                     {MOCK_STRENGTHS_PARAGRAPHS.map((paragraph, i) => (
