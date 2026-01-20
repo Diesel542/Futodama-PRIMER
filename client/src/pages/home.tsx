@@ -486,9 +486,6 @@ export default function Home() {
                 {/* Header */}
                 <div className="flex items-center justify-between pb-6 border-b border-gray-100">
                   <h1 className="text-xl font-medium text-gray-900 tracking-tight">Analysis Complete</h1>
-                  <span className="px-2 py-1 rounded-full bg-green-50 text-green-700 text-xs font-medium border border-green-100">
-                    Process finished
-                  </span>
                 </div>
 
                 {/* Section 1: Strengths */}
