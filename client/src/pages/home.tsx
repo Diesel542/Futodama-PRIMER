@@ -515,14 +515,17 @@ export default function Home() {
       </div>
       {/* Right Pane: Analysis Results */}
       <div className="w-[40%] h-screen overflow-y-auto bg-white">
-        <div className="max-w-xl mx-auto p-12 pt-24">
+        <div className={cn(
+          "max-w-xl mx-auto p-12 transition-all duration-500",
+          state === "idle" ? "h-full flex flex-col justify-center" : "pt-24"
+        )}>
           <AnimatePresence mode="wait">
             {state === "idle" ? (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="h-full flex flex-col justify-center max-w-lg mx-auto"
+                className="w-full max-w-lg mx-auto"
               >
                 <div className="mb-16 text-center">
                    <div className="mb-8 flex justify-center">
