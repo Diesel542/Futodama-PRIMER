@@ -411,7 +411,6 @@ export default function Home() {
           </AnimatePresence>
         </div>
       </div>
-
       {/* Right Pane: Analysis Results */}
       <div className="w-[40%] h-screen overflow-y-auto bg-white">
         <div className="max-w-xl mx-auto p-12 pt-24">
@@ -434,7 +433,7 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-6 max-w-md mx-auto w-full">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 font-sans text-center">Analysis Criteria</h3>
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 font-sans text-center">ASSESSMENT | SUGGESTION | GROWTH</h3>
                   
                   <div className="grid grid-cols-1 gap-4">
                   {[
