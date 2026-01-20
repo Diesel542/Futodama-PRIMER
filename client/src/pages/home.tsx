@@ -537,9 +537,7 @@ export default function Home() {
                   
                   <div className="grid grid-cols-1 gap-4">
                   {[
-                    { label: "Role Alignment", desc: "Consistency with target seniority level" },
-                    { label: "Skills Relevance", desc: "Modern technology stack grouping" },
-                    { label: "Visual Clarity", desc: "Scannability and professional formatting" }
+                    { label: "Impact & Metrics", desc: "Quantifiable achievements and results" }
                   ].map((item, idx) => (
                     <motion.div 
                       key={item.label}
