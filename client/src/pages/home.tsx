@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, Check, ChevronRight, Sparkles, Loader2 } from "lucide-react";
+import { Upload, FileText, Check, ChevronRight, Sparkles, Loader2, Leaf } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -424,11 +424,11 @@ export default function Home() {
                 className="h-full flex flex-col justify-center max-w-lg mx-auto"
               >
                 <div className="mb-16 text-center">
-                   <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mb-8 border border-green-100 mx-auto shadow-sm">
-                      <Sparkles className="w-10 h-10 text-green-600" />
+                   <div className="w-32 h-32 bg-green-50 rounded-3xl flex items-center justify-center mb-8 border border-green-100 mx-auto shadow-sm">
+                      <Leaf className="w-16 h-16 text-green-400" />
                    </div>
-                   <h2 className="text-3xl font-medium text-gray-900 mb-4 tracking-tight">CV Health Check</h2>
-                   <p className="text-base text-gray-500 leading-relaxed max-w-sm mx-auto">
+                   <h2 className="text-4xl font-medium text-gray-900 mb-4 tracking-tight">CV Health Check</h2>
+                   <p className="text-lg text-gray-500 leading-relaxed max-w-sm mx-auto">
                      Our automated analysis evaluates your CV against industry standards for clarity, impact, and role alignment.
                    </p>
                 </div>
