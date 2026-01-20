@@ -486,6 +486,7 @@ export default function Home() {
                 {/* Header */}
                 <div className="flex items-center justify-between pb-6 border-b border-gray-100">
                   <h1 className="text-xl font-medium text-gray-900 tracking-tight">Analysis Complete</h1>
+                  <Leaf className="w-6 h-6 text-[#6FC295]" strokeWidth={1.5} />
                 </div>
 
                 {/* Section 1: Strengths */}
