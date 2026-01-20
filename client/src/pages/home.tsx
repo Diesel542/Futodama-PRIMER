@@ -529,7 +529,7 @@ export default function Home() {
                       <Leaf className="w-24 h-24 text-[#6FC295]" strokeWidth={1.5} />
                    </div>
                    <h2 className="text-4xl font-medium text-gray-900 mb-4 tracking-tight">CV Health Check</h2>
-                   <p className="text-lg text-gray-500 leading-relaxed max-w-sm mx-auto">This automated caretaker evaluates a CV against our standards for clarity, impact, and role alignment.</p>
+                   <p className="text-lg text-gray-500 leading-relaxed max-w-sm mx-auto">This automated caretaker evaluates a CV and suggests improvements aligned to the CREADIS Quality Standard.</p>
                 </div>
 
                 <div className="space-y-6 max-w-md mx-auto w-full">
