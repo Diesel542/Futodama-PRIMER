@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, Check, ChevronRight, Sparkles, Loader2, Leaf } from "lucide-react";
+import { Upload, FileText, Check, ChevronRight, Sparkles, Loader2, Leaf, Lock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -97,6 +97,8 @@ export default function Home() {
   const [suggestionStates, setSuggestionStates] = useState<Record<string, SuggestionStatus>>({});
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
 
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+
   const handleUpload = () => {
     setState("scanning");
   };
@@ -150,11 +152,91 @@ export default function Home() {
        }
     }
     
+    const baseClasses = "-mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent";
+    
     switch (effectiveType) {
-      case 'warm': return 'bg-[#FDF6E3] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent shadow-[0_0_15px_rgba(253,246,227,0.5)]';
-      case 'cool': return 'bg-[#E8F5E9] -mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent shadow-[0_0_15px_rgba(232,245,233,0.5)]';
-      case 'neutral': return 'bg-transparent transition-colors duration-1000';
+      case 'warm': return `${baseClasses} bg-[#FDF6E3] shadow-[0_0_15px_rgba(253,246,227,0.5)]`;
+      case 'cool': return `${baseClasses} bg-[#E8F5E9] shadow-[0_0_15px_rgba(232,245,233,0.5)]`;
+      case 'neutral': return `${baseClasses} bg-transparent`;
     }
+  };
+
+  // Helper to get pending suggestion for a section
+  const getPendingSuggestion = (sectionId: string) => {
+    return MOCK_SUGGESTIONS.find(s => s.sectionId === sectionId && (!suggestionStates[s.id] || suggestionStates[s.id] === 'pending'));
+  };
+
+  const handleSectionClick = (sectionId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent bubbling
+    const pending = getPendingSuggestion(sectionId);
+    if (pending) {
+      setActiveSection(activeSection === sectionId ? null : sectionId);
+    }
+  };
+
+  // Close popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setActiveSection(null);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const SuggestionPopover = ({ sectionId }: { sectionId: string }) => {
+    const suggestion = getPendingSuggestion(sectionId);
+    if (!suggestion) return null;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+        className="absolute left-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden text-left"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex gap-3 items-start">
+           <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+           <p className="text-xs font-medium text-gray-700 leading-relaxed font-sans">
+             {suggestion.title}
+           </p>
+        </div>
+        
+        <div className="p-4 bg-white">
+           <div className="flex justify-between items-center mb-2">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">PREVIEW: TRIM FOR BALANCE</span>
+              <button onClick={() => setActiveSection(null)} className="text-gray-400 hover:text-gray-600">
+                <span className="text-[10px] font-sans">Back</span>
+              </button>
+           </div>
+           
+           <div className="bg-amber-50/50 p-3 rounded text-xs text-gray-800 leading-relaxed mb-4 border border-amber-100/50 font-serif">
+             {suggestion.proposal}
+           </div>
+
+           <div className="flex gap-2 justify-end pt-2">
+              <button 
+                onClick={(e) => {
+                   handleAction(suggestion.id, "declined", e);
+                   setActiveSection(null);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors font-sans border border-gray-200"
+              >
+                <Lock className="w-3 h-3" />
+                Lock as is
+              </button>
+              <button 
+                onClick={(e) => {
+                   handleAction(suggestion.id, "accepted", e);
+                   setActiveSection(null);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium text-white bg-[#4A6763] hover:bg-[#3d5552] rounded transition-colors shadow-sm font-sans"
+              >
+                <Check className="w-3 h-3" />
+                Apply Change
+              </button>
+           </div>
+        </div>
+      </motion.div>
+    );
   };
 
   return (
@@ -235,7 +317,10 @@ export default function Home() {
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Experience</h3>
                     
                     {/* Job 1 - Warm Highlight (Key Relevance) */}
-                    <div className={`mb-6 ${getHighlightClass('warm', 'job-1')}`}>
+                    <div 
+                      className={`mb-6 relative group ${getHighlightClass('warm', 'job-1')} ${getPendingSuggestion('job-1') ? 'cursor-pointer' : ''}`}
+                      onClick={(e) => handleSectionClick('job-1', e)}
+                    >
                       <div className="flex justify-between items-baseline mb-1">
                         <h4 className="text-sm font-bold text-gray-600">Senior Tech Lead</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2021 — Present</span>
@@ -246,6 +331,8 @@ export default function Home() {
                         <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Mentored 5 junior developers, fostering a culture of code quality.</li>
                         <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Reduced deployment time by 60% through CI/CD optimization.</li>
                       </ul>
+                      
+                      {activeSection === 'job-1' && <SuggestionPopover sectionId="job-1" />}
                     </div>
 
                     {/* Job 2 - Cool Highlight (Good Context) */}
@@ -263,7 +350,10 @@ export default function Home() {
                     </div>
 
                     {/* Job 3 - Warm Highlight */}
-                    <div className={`mb-6 ${getHighlightClass('warm', 'job-3')}`}>
+                    <div 
+                      className={`mb-6 relative group ${getHighlightClass('warm', 'job-3')} ${getPendingSuggestion('job-3') ? 'cursor-pointer' : ''}`}
+                      onClick={(e) => handleSectionClick('job-3', e)}
+                    >
                       <div className="flex justify-between items-baseline mb-1">
                         <h4 className="text-sm font-bold text-gray-600">Junior Developer</h4>
                         <span className="text-[10px] text-gray-500 font-sans">2016 — 2018</span>
@@ -273,6 +363,8 @@ export default function Home() {
                         <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Built responsive front-end components using React and Redux.</li>
                         <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Assisted in database schema design and optimization.</li>
                       </ul>
+                      
+                      {activeSection === 'job-3' && <SuggestionPopover sectionId="job-3" />}
                     </div>
                   </div>
 
@@ -293,7 +385,10 @@ export default function Home() {
                   </div>
 
                   {/* Projects Section - Warm Highlight */}
-                  <div className={`mb-8 ${getHighlightClass('warm', 'projects')}`}>
+                  <div 
+                    className={`mb-8 relative group ${getHighlightClass('warm', 'projects')} ${getPendingSuggestion('projects') ? 'cursor-pointer' : ''}`}
+                    onClick={(e) => handleSectionClick('projects', e)}
+                  >
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Projects</h3>
                     
                     <div className="mb-4">
@@ -315,10 +410,15 @@ export default function Home() {
                         Writing weekly articles about distributed systems, cloud architecture, and engineering leadership.
                       </p>
                     </div>
+                    
+                    {activeSection === 'projects' && <SuggestionPopover sectionId="projects" />}
                   </div>
 
                   {/* Publications & Talks - Warm Highlight */}
-                  <div className={`mb-8 ${getHighlightClass('warm', 'publications')}`}>
+                  <div 
+                    className={`mb-8 relative group ${getHighlightClass('warm', 'publications')} ${getPendingSuggestion('publications') ? 'cursor-pointer' : ''}`}
+                    onClick={(e) => handleSectionClick('publications', e)}
+                  >
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Publications & Talks</h3>
                     <div className="mb-4">
                       <div className="flex justify-between items-baseline mb-1">
@@ -338,6 +438,8 @@ export default function Home() {
                         Panel discussion on the evolving landscape of serverless computing and its impact on developer velocity.
                       </p>
                     </div>
+                    
+                    {activeSection === 'publications' && <SuggestionPopover sectionId="publications" />}
                   </div>
 
                   {/* Volunteering - Cool Highlight */}
