@@ -421,21 +421,22 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="h-full flex flex-col justify-center max-w-sm mx-auto"
+                className="h-full flex flex-col justify-center max-w-lg mx-auto"
               >
-                <div className="mb-12">
-                   <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center mb-6 border border-gray-100">
-                      <Sparkles className="w-5 h-5 text-gray-400" />
+                <div className="mb-16 text-center">
+                   <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mb-8 border border-green-100 mx-auto shadow-sm">
+                      <Sparkles className="w-10 h-10 text-green-600" />
                    </div>
-                   <h2 className="text-xl font-medium text-gray-900 mb-3 tracking-tight">CV Health Check</h2>
-                   <p className="text-sm text-gray-500 leading-relaxed">
+                   <h2 className="text-3xl font-medium text-gray-900 mb-4 tracking-tight">CV Health Check</h2>
+                   <p className="text-base text-gray-500 leading-relaxed max-w-sm mx-auto">
                      Our automated analysis evaluates your CV against industry standards for clarity, impact, and role alignment.
                    </p>
                 </div>
 
-                <div className="space-y-6">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Analysis Criteria</h3>
+                <div className="space-y-6 max-w-md mx-auto w-full">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 font-sans text-center">Analysis Criteria</h3>
                   
+                  <div className="grid grid-cols-1 gap-4">
                   {[
                     { label: "Impact & Metrics", desc: "Quantifiable achievements and results" },
                     { label: "Role Alignment", desc: "Consistency with target seniority level" },
@@ -444,18 +445,19 @@ export default function Home() {
                   ].map((item, idx) => (
                     <motion.div 
                       key={item.label}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.1 }}
-                      className="flex gap-4"
+                      className="flex gap-4 p-4 rounded-lg bg-gray-50/50 border border-gray-100/50 items-start"
                     >
-                      <div className="w-1 h-1 rounded-full bg-gray-300 mt-2 flex-shrink-0" />
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-0.5">{item.label}</h4>
-                        <p className="text-xs text-gray-400">{item.desc}</p>
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                      <div className="text-left">
+                        <h4 className="text-sm font-medium text-gray-900 mb-0.5">{item.label}</h4>
+                        <p className="text-xs text-gray-500">{item.desc}</p>
                       </div>
                     </motion.div>
                   ))}
+                  </div>
                 </div>
               </motion.div>
             ) : state === "scanning" ? (
