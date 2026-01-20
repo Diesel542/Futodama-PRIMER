@@ -427,9 +427,7 @@ export default function Home() {
                       <Leaf className="w-16 h-16 text-[#6FC295]" />
                    </div>
                    <h2 className="text-4xl font-medium text-gray-900 mb-4 tracking-tight">CV Health Check</h2>
-                   <p className="text-lg text-gray-500 leading-relaxed max-w-sm mx-auto">
-                     Our automated analysis evaluates your CV against industry standards for clarity, impact, and role alignment.
-                   </p>
+                   <p className="text-lg text-gray-500 leading-relaxed max-w-sm mx-auto">This automated caretaker evaluates the CV against our standards for clarity, impact, and role alignment.</p>
                 </div>
 
                 <div className="space-y-6 max-w-md mx-auto w-full">
