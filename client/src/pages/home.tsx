@@ -535,25 +535,7 @@ export default function Home() {
                 <div className="space-y-6 max-w-md mx-auto w-full">
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 font-sans text-center">ASSESSMENT | SUGGESTION | GROWTH</h3>
                   
-                  <div className="grid grid-cols-1 gap-4">
-                  {[
-                    { label: "Impact & Metrics", desc: "Quantifiable achievements and results" }
-                  ].map((item, idx) => (
-                    <motion.div 
-                      key={item.label}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="flex gap-4 p-4 rounded-lg bg-gray-50/50 border border-gray-100/50 items-start"
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-                      <div className="text-left">
-                        <h4 className="text-sm font-medium text-gray-900 mb-0.5">{item.label}</h4>
-                        <p className="text-xs text-gray-500">{item.desc}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                  </div>
+                  
                 </div>
               </motion.div>
             ) : state === "scanning" ? (
