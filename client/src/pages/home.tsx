@@ -96,11 +96,49 @@ export default function Home() {
   const [state, setState] = useState<AppState>("idle");
   const [suggestionStates, setSuggestionStates] = useState<Record<string, SuggestionStatus>>({});
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
-
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useState<HTMLInputElement | null>(null)[0];
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadError(null);
+    setState("scanning");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/cv/analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Upload failed");
+      }
+
+      const data = await response.json();
+      
+      // Simulate processing time
+      setTimeout(() => {
+        setState("complete");
+      }, 2000);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Upload failed");
+      setState("idle");
+    }
+  };
 
   const handleUpload = () => {
-    setState("scanning");
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.docx,.doc";
+    input.onchange = handleFileSelect as any;
+    input.click();
   };
 
   const handleSuggestionClick = (id: string) => {
@@ -277,7 +315,13 @@ export default function Home() {
                     Drag and drop or click to select<br/>
                     <span className="text-xs opacity-70">PDF or DOCX supported</span>
                   </p>
-                  <button className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  {uploadError && (
+                    <p className="text-sm text-red-600 mb-4 text-center">{uploadError}</p>
+                  )}
+                  <button 
+                    className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    data-testid="button-choose-file"
+                  >
                     Choose File
                   </button>
                 </div>
