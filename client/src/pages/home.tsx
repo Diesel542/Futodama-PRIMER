@@ -423,8 +423,8 @@ export default function Home() {
                 className="h-full flex flex-col justify-center max-w-lg mx-auto"
               >
                 <div className="mb-16 text-center">
-                   <div className="w-32 h-32 bg-emerald-50 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm">
-                      <Leaf className="w-16 h-16 text-[#6FC295]" />
+                   <div className="mb-8 flex justify-center">
+                      <Leaf className="w-24 h-24 text-[#6FC295]" strokeWidth={1.5} />
                    </div>
                    <h2 className="text-4xl font-medium text-gray-900 mb-4 tracking-tight">CV Health Check</h2>
                    <p className="text-lg text-gray-500 leading-relaxed max-w-sm mx-auto">This automated caretaker evaluates a CV against our standards for clarity, impact, and role alignment.</p>
