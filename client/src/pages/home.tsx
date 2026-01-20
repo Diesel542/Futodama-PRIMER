@@ -423,7 +423,7 @@ export default function Home() {
                 className="h-full flex flex-col justify-center max-w-lg mx-auto"
               >
                 <div className="mb-16 text-center">
-                   <div className="w-32 h-32 bg-emerald-50 rounded-3xl flex items-center justify-center mb-8 border border-emerald-100 mx-auto shadow-sm">
+                   <div className="w-32 h-32 bg-emerald-50 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm">
                       <Leaf className="w-16 h-16 text-[#6FC295]" />
                    </div>
                    <h2 className="text-4xl font-medium text-gray-900 mb-4 tracking-tight">CV Health Check</h2>
