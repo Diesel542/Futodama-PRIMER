@@ -503,9 +503,9 @@ export default function Home() {
                       repeat: Infinity,
                       repeatDelay: 0.5
                     }}
-                    className="absolute left-0 right-0 h-2 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.2)] backdrop-blur-[1px] z-10"
+                    className="absolute left-0 right-0 h-2 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.1)] backdrop-blur-[1px] z-10"
                   >
-                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-blue-500/50" />
+                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-blue-500/30" />
                   </motion.div>
                 )}
               </motion.div>
@@ -522,41 +522,16 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="h-full flex flex-col justify-center max-w-lg mx-auto"
+                className="h-full flex flex-col justify-center max-w-md mx-auto px-8"
               >
-                <div className="mb-16 text-center">
-                   <div className="mb-8 flex justify-center">
-                      <Leaf className="w-24 h-24 text-[#6FC295]" strokeWidth={1.5} />
-                   </div>
-                   <h2 className="text-4xl font-medium text-gray-900 mb-4 tracking-tight">CV Health Check</h2>
-                   <p className="text-lg text-gray-500 leading-relaxed max-w-sm mx-auto">This automated caretaker evaluates a CV against our standards for clarity, impact, and role alignment.</p>
-                </div>
-
-                <div className="space-y-6 max-w-md mx-auto w-full">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 font-sans text-center">ASSESSMENT | SUGGESTION | GROWTH</h3>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                  {[
-                    { label: "Impact & Metrics", desc: "Quantifiable achievements and results" },
-                    { label: "Role Alignment", desc: "Consistency with target seniority level" },
-                    { label: "Skills Relevance", desc: "Modern technology stack grouping" },
-                    { label: "Visual Clarity", desc: "Scannability and professional formatting" }
-                  ].map((item, idx) => (
-                    <motion.div 
-                      key={item.label}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="flex gap-4 p-4 rounded-lg bg-gray-50/50 border border-gray-100/50 items-start"
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-                      <div className="text-left">
-                        <h4 className="text-sm font-medium text-gray-900 mb-0.5">{item.label}</h4>
-                        <p className="text-xs text-gray-500">{item.desc}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                  </div>
+                <div className="text-left space-y-4">
+                   <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">CV Health Check</h2>
+                   <p className="text-lg text-gray-700 font-medium">
+                     Upload a CV to receive concise, structured feedback.
+                   </p>
+                   <p className="text-sm text-gray-500 leading-relaxed">
+                     The system evaluates clarity, relevance, and alignment.
+                   </p>
                 </div>
               </motion.div>
             ) : state === "scanning" ? (
@@ -583,24 +558,24 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="space-y-10"
+                className="space-y-12"
               >
-                {/* Header */}
-                <div className="flex items-center gap-3 pb-6 border-b border-gray-100">
-                  <Leaf className="w-6 h-6 text-[#6FC295]" strokeWidth={1.5} />
-                  <h1 className="text-xl font-medium text-gray-900 tracking-tight">Analysis Complete</h1>
+                {/* Intro Line */}
+                <div className="border-b border-gray-100 pb-6">
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">
+                    Based on a first-pass reading of the CV:
+                  </p>
                 </div>
 
-                {/* Section 1: Strengths */}
+                {/* Section 1: What’s working well */}
                 <section>
                   <motion.h2 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-2"
+                    className="text-sm font-semibold text-gray-900 mb-6"
                   >
-                    <Check className="w-3.5 h-3.5 text-gray-400" />
-                    Strengths Observed
+                    What’s working well
                   </motion.h2>
                   <div className="space-y-4">
                     {MOCK_STRENGTHS_PARAGRAPHS.map((paragraph, i) => (
@@ -609,7 +584,7 @@ export default function Home() {
                         initial={{ opacity: 0, x: 10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.2 + (i * 0.1) }}
-                        className="text-sm text-gray-700 leading-relaxed border-l-2 border-gray-100 pl-4"
+                        className="text-sm text-gray-600 leading-relaxed pl-1"
                       >
                         {paragraph}
                       </motion.p>
@@ -617,16 +592,15 @@ export default function Home() {
                   </div>
                 </section>
 
-                {/* Section 2: Suggestions */}
+                {/* Section 2: Where to strengthen */}
                 <section>
                   <motion.h2 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-2"
+                    className="text-sm font-semibold text-gray-900 mb-6"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-gray-400" />
-                    Suggestions for improvement
+                    Where to strengthen
                   </motion.h2>
                   <ul className="space-y-3">
                     {MOCK_SUGGESTIONS.map((item, i) => {
@@ -645,22 +619,22 @@ export default function Home() {
                           transition={{ delay: 0.7 + (i * 0.1) }}
                           onClick={() => !isHandled && handleSuggestionClick(item.id)}
                           className={cn(
-                            "text-sm relative pl-6 pr-4 py-3 rounded-md transition-all border",
+                            "text-sm relative pl-4 pr-4 py-3 rounded-md transition-all border",
                             isHandled 
-                              ? "bg-green-50 border-green-100 text-green-800 cursor-default" 
-                              : "bg-white border-transparent hover:bg-gray-50 cursor-pointer hover:border-gray-200 hover:shadow-sm"
+                              ? "bg-gray-50 border-gray-100 text-gray-500 cursor-default" 
+                              : "bg-white border-transparent hover:bg-gray-50 cursor-pointer hover:border-gray-200"
                           )}
                         >
                           <div className={cn(
-                            "absolute left-2 top-4 w-1.5 h-1.5 rounded-full",
-                            isHandled ? "bg-green-500" : "bg-amber-400"
+                            "absolute left-0 top-0 bottom-0 w-1 rounded-l-md transition-colors",
+                            isHandled ? "bg-green-500/50" : "bg-transparent"
                           )} />
                           
                           <div className="flex justify-between items-start gap-4">
-                            <span className={cn(isHandled && "font-medium")}>
+                            <span className={cn(isHandled && "line-through opacity-70")}>
                               {item.title}
                             </span>
-                            {isHandled && <Check className="w-4 h-4 text-green-600 mt-0.5" />}
+                            {isHandled && <Check className="w-3.5 h-3.5 text-green-600 mt-0.5" />}
                           </div>
 
                           <AnimatePresence>
@@ -699,18 +673,20 @@ export default function Home() {
                   </ul>
                 </section>
 
-                {/* CTA */}
-                <motion.div 
+                {/* Section 3: Optional rewrite sample */}
+                <motion.section 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 2.0 }}
-                  className="pt-8 pb-12"
                 >
-                  <button className="group flex items-center gap-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all px-6 py-3 rounded-md shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                  <h2 className="text-sm font-semibold text-gray-900 mb-6">
+                    Optional rewrite sample
+                  </h2>
+                  <button className="group flex items-center gap-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all px-4 py-2 rounded-md shadow-sm">
                     Suggest role alignment draft
                     <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
                   </button>
-                </motion.div>
+                </motion.section>
 
               </motion.div>
             )}

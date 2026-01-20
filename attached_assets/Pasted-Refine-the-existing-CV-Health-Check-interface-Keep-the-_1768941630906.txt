@@ -1,0 +1,102 @@
+Refine the existing CV Health Check interface.
+Keep the calm, professional, Apple-like aesthetic, but apply the following specific adjustments:
+
+1. Simplify the left-side “landing” panel
+
+Remove the leaf icon entirely.
+
+Remove the four category boxes (“Impact & Metrics,” “Role Alignment,” etc.).
+
+Replace the right-side intro area with one simple block of text:
+
+Header: “CV Health Check”
+Subheader: “Upload a CV to receive concise, structured feedback.”
+Body text (smaller): “The system evaluates clarity, relevance, and alignment.”
+
+No icons. No decorative branding.
+
+2. Strengthen the analysis panel structure
+
+On the analysis/result screen (right side), add clean section headers:
+
+“What’s working well”
+
+“Where to strengthen”
+
+“Optional rewrite sample”
+
+Make them subtle, not loud — same typography scale as your current “Suggestions for Improvement” header, but with more whitespace.
+
+Above all analysis content, add a tiny, subdued line:
+
+“Based on a first-pass reading of the CV:”
+
+This should look intentional and calm.
+
+3. Remove all unneeded ornamentation
+
+Do NOT show any logos or mascots.
+
+No leaf, no icons, no branding beyond text.
+
+Keep the color palette neutral (grey, white, soft green accent).
+
+Ensure it feels like it could live inside an enterprise tool today.
+
+4. Keep the micro-interaction (“Apply Change”)
+
+Maintain the current “Apply Change” preview popover, but ensure it has:
+
+Rounded corners
+
+Calm color palette
+
+Very simple copy
+
+5. Upload screen adjustments
+
+Keep the large “Upload CV” box centered on the left.
+
+Ensure the right panel only displays the simple intro text block mentioned above.
+
+Layout should feel empty and breathable, not busy.
+
+6. Analysis screen scanning effect
+
+Keep the subtle scanning animation over the CV preview, but ensure:
+
+It’s faint
+
+It moves slowly
+
+It doesn’t look like sci-fi diagnostics
+
+It should feel like a document being gently inspected.
+
+7. CTA button
+
+At the bottom of the analysis panel, keep the CTA:
+
+“Suggest role alignment draft”
+
+It must look optional and non-threatening:
+
+small arrow icon
+
+subtle outline or soft accent color
+
+no heavy emphasis
+
+8. Overall tone
+
+The entire experience should communicate:
+
+intentional restraint
+
+precision
+
+clarity
+
+“We know exactly what we’re doing — and we’re not trying to impress you with gimmicks.”
+
+This is a minimal, enterprise-friendly, low-risk v1 that delivers immediate value.
