@@ -49,17 +49,23 @@ export async function registerRoutes(
         // pdf-parse has ESM/CJS interop issues - handle various export patterns
         const pdfParseModule = await import("pdf-parse") as any;
 
-        // Try multiple export patterns: PDFParse (Replit), default, or module itself
-        const pdfParse = pdfParseModule.PDFParse
-          || pdfParseModule.default
-          || pdfParseModule;
+        let pdfData: { text: string };
 
-        if (typeof pdfParse !== 'function') {
-          console.error('pdf-parse module structure:', Object.keys(pdfParseModule));
-          throw new Error('Could not load PDF parser');
+        // Check if PDFParse is a class (Replit pattern) vs function (standard pattern)
+        if (pdfParseModule.PDFParse) {
+          // PDFParse is a class - instantiate and use loadPDF method
+          const parser = new pdfParseModule.PDFParse();
+          pdfData = await parser.loadPDF(fileBuffer);
+        } else {
+          // Standard pattern - default export is a function
+          const pdfParse = pdfParseModule.default || pdfParseModule;
+          if (typeof pdfParse !== 'function') {
+            console.error('pdf-parse module structure:', Object.keys(pdfParseModule));
+            throw new Error('Could not load PDF parser');
+          }
+          pdfData = await pdfParse(fileBuffer);
         }
 
-        const pdfData = await pdfParse(fileBuffer);
         extractedText = pdfData.text;
       } else if (
         mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
