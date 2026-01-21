@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Check, ChevronRight, Sparkles, Loader2, Leaf, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { CV, Observation, AnalyzeResponse } from "@shared/schema";
+import type { CV, Observation, AnalyzeResponse, CVSection } from "@shared/schema";
 
 // Types
 type AppState = "idle" | "scanning" | "complete";
@@ -26,6 +26,33 @@ const DisCreadisLogo = () => (
     </div>
   </div>
 );
+
+// Helper function for date formatting
+const formatDateRange = (start?: string, end?: string): string => {
+  if (!start) return '';
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  };
+
+  const startFormatted = formatDate(start);
+
+  // Check if end date is very recent or missing - treat as "Present"
+  if (!end) {
+    return `${startFormatted} — Present`;
+  }
+
+  const endDate = new Date(end);
+  const now = new Date();
+  const monthsDiff = (now.getFullYear() - endDate.getFullYear()) * 12 + (now.getMonth() - endDate.getMonth());
+
+  if (monthsDiff <= 1) {
+    return `${startFormatted} — Present`;
+  }
+
+  return `${startFormatted} — ${formatDate(end)}`;
+};
 
 export default function Home() {
   const [state, setState] = useState<AppState>("idle");
@@ -229,44 +256,116 @@ export default function Home() {
       );
     }
 
+    // Group sections by type
+    const summary = cvData.sections.find(s => s.type === 'summary');
+    const jobs = cvData.sections.filter(s => s.type === 'job');
+    const education = cvData.sections.filter(s => s.type === 'education');
+    const skills = cvData.sections.filter(s => s.type === 'skill');
+    const projects = cvData.sections.filter(s => s.type === 'project');
+    const other = cvData.sections.filter(s => s.type === 'other');
+
+    const renderSection = (section: CVSection) => {
+      const hasPending = !!getPendingObservation(section.id);
+      const highlightClass = getHighlightClass(section.id);
+
+      return (
+        <div
+          key={section.id}
+          className={`mb-6 relative ${highlightClass} ${hasPending ? 'cursor-pointer' : ''}`}
+          onClick={(e) => hasPending && handleSectionClick(section.id, e)}
+        >
+          <div className="flex justify-between items-baseline mb-1">
+            <h4 className="text-sm font-bold text-gray-600">{section.title}</h4>
+            {section.startDate && (
+              <span className="text-[10px] text-gray-500 font-sans">
+                {formatDateRange(section.startDate, section.endDate)}
+              </span>
+            )}
+          </div>
+          {section.organization && (
+            <div className="text-[11px] text-gray-600 italic mb-2">{section.organization}</div>
+          )}
+          <div className="text-[10px] leading-relaxed text-gray-600 whitespace-pre-wrap">
+            {section.content}
+          </div>
+          {activeSection === section.id && <SuggestionPopover sectionId={section.id} />}
+        </div>
+      );
+    };
+
     return (
       <>
-        {/* CV Header */}
+        {/* Header */}
         <div className="flex justify-between items-start border-b border-gray-300 pb-6 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-600 mb-1">{cvData.fileName}</h1>
-            <div className="flex gap-4 text-xs text-gray-500 font-sans uppercase tracking-wide">
-              <span>Analyzed CV</span>
+            <h1 className="text-2xl font-bold text-gray-600 mb-1">
+              {cvData.fileName.replace(/\.(pdf|docx?)$/i, '')}
+            </h1>
+            <div className="text-xs text-gray-500 font-sans">
+              Uploaded {new Date(cvData.uploadedAt).toLocaleDateString()}
             </div>
           </div>
           <DisCreadisLogo />
         </div>
 
-        {/* Render each section */}
-        {cvData.sections.map((section) => {
-          const hasPending = !!getPendingObservation(section.id);
-          const highlightClass = getHighlightClass(section.id);
+        {/* Summary */}
+        {summary && (
+          <div className={`mb-6 ${getHighlightClass(summary.id)}`}>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">
+              Professional Summary
+            </h3>
+            <p className="text-[10px] leading-relaxed text-gray-600">
+              {summary.content}
+            </p>
+          </div>
+        )}
 
-          return (
-            <div
-              key={section.id}
-              className={`mb-6 relative group ${highlightClass} ${hasPending ? 'cursor-pointer' : ''}`}
-              onClick={(e) => hasPending && handleSectionClick(section.id, e)}
-            >
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">
-                {section.title}
-              </h3>
-              {section.organization && (
-                <div className="text-[11px] text-gray-600 italic mb-2">{section.organization}</div>
-              )}
-              <p className="text-[10px] leading-relaxed text-gray-600 whitespace-pre-wrap">
-                {section.content}
-              </p>
+        {/* Experience */}
+        {jobs.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">
+              Experience
+            </h3>
+            {jobs.map(renderSection)}
+          </div>
+        )}
 
-              {activeSection === section.id && <SuggestionPopover sectionId={section.id} />}
-            </div>
-          );
-        })}
+        {/* Education */}
+        {education.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">
+              Education
+            </h3>
+            {education.map(renderSection)}
+          </div>
+        )}
+
+        {/* Projects */}
+        {projects.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">
+              Projects
+            </h3>
+            {projects.map(renderSection)}
+          </div>
+        )}
+
+        {/* Skills */}
+        {skills.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">
+              Skills
+            </h3>
+            {skills.map(section => (
+              <div key={section.id} className={getHighlightClass(section.id)}>
+                <div className="text-[10px] text-gray-600">{section.content}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Other sections */}
+        {other.length > 0 && other.map(renderSection)}
       </>
     );
   };
