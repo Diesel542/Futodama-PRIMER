@@ -70,6 +70,7 @@ export interface ParseResult {
   unparsedContent: string[];   // chunks we couldn't classify
   warnings: string[];          // parse issues
   overallConfidence: 'high' | 'medium' | 'low';
+  rawText?: string;            // original text for display
 }
 
 // ============================================

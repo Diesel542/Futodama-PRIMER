@@ -235,13 +235,28 @@ export default function Home() {
     );
   };
 
-  // Render CV sections from real data
+  // Find which section a line belongs to (for highlighting)
+  const findSectionForLine = (lineIndex: number): CVSection | null => {
+    if (!cvData) return null;
+
+    // Simple heuristic: check if line contains section title
+    const lines = cvData.rawText.split('\n');
+    const line = lines[lineIndex]?.trim();
+    if (!line) return null;
+
+    for (const section of cvData.sections) {
+      if (section.title && line.includes(section.title.substring(0, 30))) {
+        return section;
+      }
+    }
+    return null;
+  };
+
+  // Render CV as original document - preserving PDF layout
   const renderCVSections = () => {
-    if (!cvData || !cvData.sections.length) {
-      // Fallback to static preview if no data
+    if (!cvData) {
       return (
         <>
-          {/* CV Header */}
           <div className="flex justify-between items-start border-b border-gray-300 pb-6 mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-600 mb-1">Document Preview</h1>
@@ -256,41 +271,80 @@ export default function Home() {
       );
     }
 
-    // Group sections by type
-    const summary = cvData.sections.find(s => s.type === 'summary');
-    const jobs = cvData.sections.filter(s => s.type === 'job');
-    const education = cvData.sections.filter(s => s.type === 'education');
-    const skills = cvData.sections.filter(s => s.type === 'skill');
-    const projects = cvData.sections.filter(s => s.type === 'project');
-    const other = cvData.sections.filter(s => s.type === 'other');
+    // Create a map of section start positions for highlighting
+    const sectionHighlights = new Map<string, { start: number; end: number; section: CVSection }>();
 
-    const renderSection = (section: CVSection) => {
-      const hasPending = !!getPendingObservation(section.id);
-      const highlightClass = getHighlightClass(section.id);
+    // Find positions of each section in rawText for highlighting
+    cvData.sections.forEach((section) => {
+      const startPos = cvData.rawText.indexOf(section.title);
+      if (startPos !== -1) {
+        // Find end of this section (start of next section or end of text)
+        let endPos = cvData.rawText.length;
+        cvData.sections.forEach((other) => {
+          if (other.id !== section.id) {
+            const otherStart = cvData.rawText.indexOf(other.title);
+            if (otherStart > startPos && otherStart < endPos) {
+              endPos = otherStart;
+            }
+          }
+        });
+        sectionHighlights.set(section.id, { start: startPos, end: endPos, section });
+      }
+    });
 
-      return (
-        <div
-          key={section.id}
-          className={`mb-6 relative ${highlightClass} ${hasPending ? 'cursor-pointer' : ''}`}
-          onClick={(e) => hasPending && handleSectionClick(section.id, e)}
-        >
-          <div className="flex justify-between items-baseline mb-1">
-            <h4 className="text-sm font-bold text-gray-600">{section.title}</h4>
-            {section.startDate && (
-              <span className="text-[10px] text-gray-500 font-sans">
-                {formatDateRange(section.startDate, section.endDate)}
-              </span>
+    // Render raw text with section highlighting
+    const renderHighlightedText = () => {
+      const text = cvData.rawText;
+      const lines = text.split('\n');
+
+      // Build a map of line index to section
+      const lineToSection = new Map<number, CVSection>();
+      let charIndex = 0;
+
+      lines.forEach((line, lineIndex) => {
+        const lineStart = charIndex;
+        const lineEnd = charIndex + line.length;
+
+        sectionHighlights.forEach(({ start, end, section }) => {
+          if (lineStart >= start && lineStart < end) {
+            lineToSection.set(lineIndex, section);
+          }
+        });
+
+        charIndex = lineEnd + 1; // +1 for newline
+      });
+
+      // Render lines with highlighting
+      return lines.map((line, index) => {
+        const section = lineToSection.get(index);
+        const hasPending = section ? !!getPendingObservation(section.id) : false;
+        const highlightClass = section ? getHighlightClass(section.id) : '';
+
+        // Check if this is a section title line
+        const isTitle = section && line.trim() === section.title;
+
+        return (
+          <div
+            key={index}
+            className={cn(
+              "relative",
+              highlightClass && !isTitle ? highlightClass : "",
+              hasPending ? "cursor-pointer" : ""
+            )}
+            onClick={(e) => section && hasPending && handleSectionClick(section.id, e)}
+          >
+            <span className={cn(
+              "block",
+              isTitle ? "font-bold text-gray-800" : ""
+            )}>
+              {line || '\u00A0'}
+            </span>
+            {section && activeSection === section.id && index === lines.findIndex(l => l.trim() === section.title) && (
+              <SuggestionPopover sectionId={section.id} />
             )}
           </div>
-          {section.organization && (
-            <div className="text-[11px] text-gray-600 italic mb-2">{section.organization}</div>
-          )}
-          <div className="text-[10px] leading-relaxed text-gray-600 whitespace-pre-wrap">
-            {section.content}
-          </div>
-          {activeSection === section.id && <SuggestionPopover sectionId={section.id} />}
-        </div>
-      );
+        );
+      });
     };
 
     return (
@@ -308,64 +362,10 @@ export default function Home() {
           <DisCreadisLogo />
         </div>
 
-        {/* Summary */}
-        {summary && (
-          <div className={`mb-6 ${getHighlightClass(summary.id)}`}>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">
-              Professional Summary
-            </h3>
-            <p className="text-[10px] leading-relaxed text-gray-600">
-              {summary.content}
-            </p>
-          </div>
-        )}
-
-        {/* Experience */}
-        {jobs.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">
-              Experience
-            </h3>
-            {jobs.map(renderSection)}
-          </div>
-        )}
-
-        {/* Education */}
-        {education.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">
-              Education
-            </h3>
-            {education.map(renderSection)}
-          </div>
-        )}
-
-        {/* Projects */}
-        {projects.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">
-              Projects
-            </h3>
-            {projects.map(renderSection)}
-          </div>
-        )}
-
-        {/* Skills */}
-        {skills.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">
-              Skills
-            </h3>
-            {skills.map(section => (
-              <div key={section.id} className={getHighlightClass(section.id)}>
-                <div className="text-[10px] text-gray-600">{section.content}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Other sections */}
-        {other.length > 0 && other.map(renderSection)}
+        {/* Raw document content - preserving original layout */}
+        <div className="text-[11px] leading-relaxed text-gray-700 font-serif">
+          {renderHighlightedText()}
+        </div>
       </>
     );
   };
