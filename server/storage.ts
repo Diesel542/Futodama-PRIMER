@@ -1,50 +1,38 @@
-import { CV, Observation } from '@shared/schema';
+import { type User, type InsertUser } from "@shared/schema";
+import { randomUUID } from "crypto";
 
-/**
- * IN-MEMORY STORAGE FOR V0
- *
- * This is intentionally simple. We're not using a database yet.
- * CVs are stored for the session duration only.
- *
- * For v1, this will be replaced with proper persistence.
- */
+// modify the interface with any CRUD methods
+// you might need
 
-class CVStorage {
-  private cvs: Map<string, CV> = new Map();
+export interface IStorage {
+  getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+}
 
-  store(cv: CV): void {
-    this.cvs.set(cv.id, cv);
+export class MemStorage implements IStorage {
+  private users: Map<string, User>;
+
+  constructor() {
+    this.users = new Map();
   }
 
-  get(id: string): CV | undefined {
-    return this.cvs.get(id);
+  async getUser(id: string): Promise<User | undefined> {
+    return this.users.get(id);
   }
 
-  updateObservation(cvId: string, observationId: string, status: Observation['status']): Observation | undefined {
-    const cv = this.cvs.get(cvId);
-    if (!cv) return undefined;
-
-    const observation = cv.observations.find(o => o.id === observationId);
-    if (!observation) return undefined;
-
-    observation.status = status;
-    return observation;
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.username === username,
+    );
   }
 
-  getSection(cvId: string, sectionId: string) {
-    const cv = this.cvs.get(cvId);
-    if (!cv) return undefined;
-    return cv.sections.find(s => s.id === sectionId);
-  }
-
-  // For debugging
-  listAll(): CV[] {
-    return Array.from(this.cvs.values());
-  }
-
-  clear(): void {
-    this.cvs.clear();
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = randomUUID();
+    const user: User = { ...insertUser, id };
+    this.users.set(id, user);
+    return user;
   }
 }
 
-export const cvStorage = new CVStorage();
+export const storage = new MemStorage();

@@ -1,11 +1,76 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Check, ChevronRight, Sparkles, Loader2, Leaf, Lock } from "lucide-react";
+import { Upload, FileText, Check, ChevronRight, Sparkles, Loader2, Leaf, Lock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { CV, Observation, AnalyzeResponse } from "@shared/schema";
 
 // Types
 type AppState = "idle" | "scanning" | "complete";
+
+type SuggestionStatus = "pending" | "accepted" | "declined";
+
+interface Suggestion {
+  id: string;
+  title: string;
+  proposal: string;
+  sectionId?: string; // Link to CV section
+}
+
+// Mock Data
+const MOCK_STRENGTHS_PARAGRAPHS = [
+  "Alex demonstrates exceptional technical leadership, particularly in architecting and migrating complex distributed systems. His tenure at Nexus Cloud Solutions highlights a clear trajectory of increasing responsibility, culminating in a significant role where he spearheaded critical infrastructure changes that directly impacted business metrics like cost and uptime.",
+  "Beyond technical execution, Alex shows a strong commitment to team growth and engineering culture. His involvement in mentoring junior developers, contributing to open source, and engaging with the wider tech community through speaking and writing evidences a well-rounded senior engineer who elevates those around him."
+];
+
+const MOCK_SUGGESTIONS: Suggestion[] = [
+  {
+    id: "1",
+    title: "Quantify the outcome of the cloud migration project.",
+    proposal: "Add metrics: '...resulting in 40% cost reduction and 99.99% uptime.'",
+    sectionId: "job-1"
+  },
+  {
+    id: "2",
+    title: "Condense the 'Skills' section to focus on core competencies.",
+    proposal: "Group skills by category (Languages, Infrastructure, Tools) and remove outdated technologies.",
+    sectionId: "skills"
+  },
+  {
+    id: "3",
+    title: "Clarify your specific role in the 2024 architecture overhaul.",
+    proposal: "Specify: 'Designed and implemented the event-driven architecture using Kafka...'",
+    sectionId: "job-1"
+  },
+  {
+    id: "4",
+    title: "Align terminology with standard industry role descriptions.",
+    proposal: "Change 'Tech Lead' to 'Staff Software Engineer' to better reflect scope.",
+    sectionId: "job-1"
+  },
+  {
+    id: "5",
+    title: "Add a brief summary statement at the top.",
+    proposal: "Draft: 'Senior Engineer with 7+ years experience in distributed systems...'",
+    sectionId: "summary"
+  },
+  {
+    id: "6",
+    title: "Highlight contribution to open source projects.",
+    proposal: "Mention specific PRs or libraries maintained.",
+    sectionId: "projects"
+  },
+  {
+    id: "8",
+    title: "Standardize formatting for early career roles.",
+    proposal: "Ensure the 'Junior Developer' role follows the same bullet point structure as recent roles.",
+    sectionId: "job-3"
+  },
+  {
+    id: "9",
+    title: "Add specific conference details.",
+    proposal: "Include year and location for KubeCon talk.",
+    sectionId: "publications"
+  }
+];
 
 // Logo Component
 const DisCreadisLogo = () => (
@@ -29,14 +94,11 @@ const DisCreadisLogo = () => (
 
 export default function Home() {
   const [state, setState] = useState<AppState>("idle");
+  const [suggestionStates, setSuggestionStates] = useState<Record<string, SuggestionStatus>>({});
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-
-  // Real data state
-  const [cvData, setCvData] = useState<CV | null>(null);
-  const [observations, setObservations] = useState<Observation[]>([]);
-  const [strengths, setStrengths] = useState<string[]>([]);
+  const fileInputRef = useState<HTMLInputElement | null>(null)[0];
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -59,13 +121,12 @@ export default function Home() {
         throw new Error(error.error || "Upload failed");
       }
 
-      const data: AnalyzeResponse = await response.json();
-
-      setCvData(data.cv);
-      setObservations(data.observations);
-      setStrengths(data.strengths);
-      setState("complete");
-
+      const data = await response.json();
+      
+      // Simulate processing time
+      setTimeout(() => {
+        setState("complete");
+      }, 2000);
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Upload failed");
       setState("idle");
@@ -76,7 +137,7 @@ export default function Home() {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".pdf,.docx,.doc";
-    input.onchange = handleFileSelect as unknown as (event: Event) => void;
+    input.onchange = handleFileSelect as any;
     input.click();
   };
 
@@ -84,58 +145,68 @@ export default function Home() {
     setExpandedSuggestion(expandedSuggestion === id ? null : id);
   };
 
-  const handleAction = async (id: string, action: "accepted" | "declined", e: React.MouseEvent) => {
+  const handleAction = (id: string, action: "accepted" | "declined", e: React.MouseEvent) => {
     e.stopPropagation();
-
-    if (!cvData) return;
-
-    try {
-      await fetch(`/api/cv/${cvData.id}/observation/${id}/respond`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ response: action }),
-      });
-
-      setObservations(prev =>
-        prev.map(o => o.id === id ? { ...o, status: action } : o)
-      );
-    } catch (error) {
-      console.error("Failed to update observation:", error);
-    }
-
+    setSuggestionStates(prev => ({ ...prev, [id]: action }));
     setExpandedSuggestion(null);
   };
 
-  // Helper to get highlight class based on observation state
-  const getHighlightClass = (sectionId: string) => {
-    if (state !== 'complete' || !observations.length) return '';
-
-    const relatedObservations = observations.filter(o => o.sectionId === sectionId);
-
-    if (relatedObservations.length === 0) {
-      return 'bg-transparent';
+  useEffect(() => {
+    if (state === "scanning") {
+      const timer = setTimeout(() => {
+        setState("complete");
+      }, 4500); // 4.5s scanning simulation
+      return () => clearTimeout(timer);
     }
+  }, [state]);
 
-    const allResolved = relatedObservations.every(o => o.status !== 'pending');
-    const hasAccepted = relatedObservations.some(o => o.status === 'accepted');
+  // Helper to get highlight class based on state
+  const getHighlightClass = (type: 'warm' | 'cool' | 'neutral', sectionId?: string) => {
+    if (state !== 'complete') return '';
+    
+    // Check if section has pending suggestions
+    let effectiveType = type;
+    
+    if (sectionId) {
+       // Find all suggestions related to this section
+       const relatedSuggestions = MOCK_SUGGESTIONS.filter(s => s.sectionId === sectionId);
+       
+       if (relatedSuggestions.length > 0) {
+         // Check if ANY related suggestion is accepted (could be ALL, but let's do ANY for immediate feedback)
+         // Actually user requirement: "As I accept changes... yellow sections should change to green"
+         // Logic: If ALL pending suggestions for this section are resolved (accepted), turn green.
+         // If there are unhandled suggestions, stay yellow.
+         
+         const hasUnhandled = relatedSuggestions.some(s => {
+           const status = suggestionStates[s.id];
+           return !status || status === 'pending'; // If any are pending, keep original color
+         });
+         
+         const hasAccepted = relatedSuggestions.some(s => suggestionStates[s.id] === 'accepted');
 
+         if (!hasUnhandled && hasAccepted) {
+            effectiveType = 'cool'; // Turn green if all tasks done
+         }
+       }
+    }
+    
     const baseClasses = "-mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent";
-
-    if (allResolved && hasAccepted) {
-      return `${baseClasses} bg-[#E8F5E9] shadow-[0_0_15px_rgba(232,245,233,0.5)]`; // Green - resolved
+    
+    switch (effectiveType) {
+      case 'warm': return `${baseClasses} bg-[#FDF6E3] shadow-[0_0_15px_rgba(253,246,227,0.5)]`;
+      case 'cool': return `${baseClasses} bg-[#E8F5E9] shadow-[0_0_15px_rgba(232,245,233,0.5)]`;
+      case 'neutral': return `${baseClasses} bg-transparent`;
     }
-
-    return `${baseClasses} bg-[#FDF6E3] shadow-[0_0_15px_rgba(253,246,227,0.5)]`; // Yellow - pending
   };
 
-  // Helper to get pending observation for a section
-  const getPendingObservation = (sectionId: string) => {
-    return observations.find(o => o.sectionId === sectionId && o.status === 'pending');
+  // Helper to get pending suggestion for a section
+  const getPendingSuggestion = (sectionId: string) => {
+    return MOCK_SUGGESTIONS.find(s => s.sectionId === sectionId && (!suggestionStates[s.id] || suggestionStates[s.id] === 'pending'));
   };
 
   const handleSectionClick = (sectionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const pending = getPendingObservation(sectionId);
+    e.stopPropagation(); // Prevent bubbling
+    const pending = getPendingSuggestion(sectionId);
     if (pending) {
       setActiveSection(activeSection === sectionId ? null : sectionId);
     }
@@ -149,8 +220,8 @@ export default function Home() {
   }, []);
 
   const SuggestionPopover = ({ sectionId }: { sectionId: string }) => {
-    const observation = getPendingObservation(sectionId);
-    if (!observation) return null;
+    const suggestion = getPendingSuggestion(sectionId);
+    if (!suggestion) return null;
 
     return (
       <motion.div
@@ -163,28 +234,26 @@ export default function Home() {
         <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex gap-3 items-start">
            <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
            <p className="text-xs font-medium text-gray-700 leading-relaxed font-sans">
-             {observation.message}
+             {suggestion.title}
            </p>
         </div>
-
+        
         <div className="p-4 bg-white">
            <div className="flex justify-between items-center mb-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">SUGGESTED CHANGE</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">PREVIEW: TRIM FOR BALANCE</span>
               <button onClick={() => setActiveSection(null)} className="text-gray-400 hover:text-gray-600">
                 <span className="text-[10px] font-sans">Back</span>
               </button>
            </div>
-
-           {observation.proposal && (
-             <div className="bg-amber-50/50 p-3 rounded text-xs text-gray-800 leading-relaxed mb-4 border border-amber-100/50 font-serif">
-               {observation.proposal}
-             </div>
-           )}
+           
+           <div className="bg-amber-50/50 p-3 rounded text-xs text-gray-800 leading-relaxed mb-4 border border-amber-100/50 font-serif">
+             {suggestion.proposal}
+           </div>
 
            <div className="flex gap-2 justify-end pt-2">
-              <button
+              <button 
                 onClick={(e) => {
-                   handleAction(observation.id, "declined", e);
+                   handleAction(suggestion.id, "declined", e);
                    setActiveSection(null);
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors font-sans border border-gray-200"
@@ -192,9 +261,9 @@ export default function Home() {
                 <Lock className="w-3 h-3" />
                 Lock as is
               </button>
-              <button
+              <button 
                 onClick={(e) => {
-                   handleAction(observation.id, "accepted", e);
+                   handleAction(suggestion.id, "accepted", e);
                    setActiveSection(null);
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium text-white bg-[#4A6763] hover:bg-[#3d5552] rounded transition-colors shadow-sm font-sans"
@@ -208,69 +277,6 @@ export default function Home() {
     );
   };
 
-  // Render CV sections from real data
-  const renderCVSections = () => {
-    if (!cvData || !cvData.sections.length) {
-      // Fallback to static preview if no data
-      return (
-        <>
-          {/* CV Header */}
-          <div className="flex justify-between items-start border-b border-gray-300 pb-6 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-600 mb-1">Document Preview</h1>
-              <div className="flex gap-4 text-xs text-gray-500 font-sans uppercase tracking-wide">
-                <span>Uploaded CV</span>
-              </div>
-            </div>
-            <DisCreadisLogo />
-          </div>
-          <p className="text-sm text-gray-500">CV content will appear here after analysis.</p>
-        </>
-      );
-    }
-
-    return (
-      <>
-        {/* CV Header */}
-        <div className="flex justify-between items-start border-b border-gray-300 pb-6 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-600 mb-1">{cvData.fileName}</h1>
-            <div className="flex gap-4 text-xs text-gray-500 font-sans uppercase tracking-wide">
-              <span>Analyzed CV</span>
-            </div>
-          </div>
-          <DisCreadisLogo />
-        </div>
-
-        {/* Render each section */}
-        {cvData.sections.map((section) => {
-          const hasPending = !!getPendingObservation(section.id);
-          const highlightClass = getHighlightClass(section.id);
-
-          return (
-            <div
-              key={section.id}
-              className={`mb-6 relative group ${highlightClass} ${hasPending ? 'cursor-pointer' : ''}`}
-              onClick={(e) => hasPending && handleSectionClick(section.id, e)}
-            >
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">
-                {section.title}
-              </h3>
-              {section.organization && (
-                <div className="text-[11px] text-gray-600 italic mb-2">{section.organization}</div>
-              )}
-              <p className="text-[10px] leading-relaxed text-gray-600 whitespace-pre-wrap">
-                {section.content}
-              </p>
-
-              {activeSection === section.id && <SuggestionPopover sectionId={section.id} />}
-            </div>
-          );
-        })}
-      </>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground flex font-sans selection:bg-gray-200">
       {/* Left Pane: CV Preview */}
@@ -280,9 +286,9 @@ export default function Home() {
              <div className="w-2 h-2 rounded-full bg-gray-400" />
              CV Health Check
           </div>
-          {state !== "idle" && cvData && (
+          {state !== "idle" && (
             <div className="text-xs text-gray-400 font-mono">
-              {cvData.fileName}
+              DOCX • 2.4MB
             </div>
           )}
         </header>
@@ -297,7 +303,7 @@ export default function Home() {
                 exit={{ opacity: 0, y: -10 }}
                 className="w-full max-w-md"
               >
-                <div
+                <div 
                   onClick={handleUpload}
                   className="group relative flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-white transition-all cursor-pointer"
                 >
@@ -312,7 +318,7 @@ export default function Home() {
                   {uploadError && (
                     <p className="text-sm text-red-600 mb-4 text-center">{uploadError}</p>
                   )}
-                  <button
+                  <button 
                     className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                     data-testid="button-choose-file"
                   >
@@ -327,9 +333,207 @@ export default function Home() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="w-full h-full max-w-[750px] bg-white shadow-xl rounded-sm border border-gray-200 relative overflow-hidden flex flex-col"
               >
-                {/* Document Content */}
+                {/* Document Mockup */}
                 <div className="flex-1 p-8 overflow-y-auto font-serif text-gray-800 select-none bg-white">
-                  {renderCVSections()}
+                  {/* CV Header */}
+                  <div className="flex justify-between items-start border-b border-gray-300 pb-6 mb-6">
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-600 mb-1">Alex Morgan</h1>
+                      <div className="flex gap-4 text-xs text-gray-500 font-sans uppercase tracking-wide">
+                        <span>San Francisco, CA</span>
+                        <span>•</span>
+                        <span>alex.morgan@example.com</span>
+                      </div>
+                    </div>
+                    <DisCreadisLogo />
+                  </div>
+
+                  {/* Summary */}
+                  <div className={`mb-6 ${getHighlightClass('neutral', 'summary')}`}>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">Professional Summary</h3>
+                    <p className="text-[10px] leading-relaxed text-gray-600">
+                      Senior Software Engineer with 7+ years of experience in distributed systems and cloud architecture. Proven track record of leading cross-functional teams and delivering scalable solutions, enhancing system reliability and reducing operational costs.
+                    </p>
+                  </div>
+
+                  {/* Experience Section */}
+                  <div className="mb-4">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Experience</h3>
+                    
+                    {/* Job 1 - Warm Highlight (Key Relevance) */}
+                    <div 
+                      className={`mb-6 relative group ${getHighlightClass('warm', 'job-1')} ${getPendingSuggestion('job-1') ? 'cursor-pointer' : ''}`}
+                      onClick={(e) => handleSectionClick('job-1', e)}
+                    >
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-600">Senior Tech Lead</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2021 — Present</span>
+                      </div>
+                      <div className="text-[11px] text-gray-600 italic mb-2">Nexus Cloud Solutions</div>
+                      <ul className="list-disc list-outside ml-3 space-y-1">
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Spearheaded the migration of legacy monolith to microservices architecture.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Mentored 5 junior developers, fostering a culture of code quality.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Reduced deployment time by 60% through CI/CD optimization.</li>
+                      </ul>
+                      
+                      {activeSection === 'job-1' && <SuggestionPopover sectionId="job-1" />}
+                    </div>
+
+                    {/* Job 2 - Cool Highlight (Good Context) */}
+                    <div className={`mb-6 ${getHighlightClass('cool')}`}>
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-600">Software Engineer</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2018 — 2021</span>
+                      </div>
+                      <div className="text-[11px] text-gray-600 italic mb-2">DataFlow Systems</div>
+                      <ul className="list-disc list-outside ml-3 space-y-1">
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Developed real-time data processing pipelines using Apache Kafka.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Collaborated with product teams to define API specifications.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Improved test coverage from 65% to 90% using Jest and Cypress.</li>
+                      </ul>
+                    </div>
+
+                    {/* Job 3 - Warm Highlight */}
+                    <div 
+                      className={`mb-6 relative group ${getHighlightClass('warm', 'job-3')} ${getPendingSuggestion('job-3') ? 'cursor-pointer' : ''}`}
+                      onClick={(e) => handleSectionClick('job-3', e)}
+                    >
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-600">Junior Developer</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2016 — 2018</span>
+                      </div>
+                      <div className="text-[11px] text-gray-600 italic mb-2">StartUp Inc.</div>
+                      <ul className="list-disc list-outside ml-3 space-y-1">
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Built responsive front-end components using React and Redux.</li>
+                        <li className="text-[10px] leading-relaxed text-gray-600 pl-1">Assisted in database schema design and optimization.</li>
+                      </ul>
+                      
+                      {activeSection === 'job-3' && <SuggestionPopover sectionId="job-3" />}
+                    </div>
+                  </div>
+
+                  {/* Education Section - Neutral */}
+                  <div className={`mb-6 ${getHighlightClass('neutral')}`}>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Education</h3>
+                    <div className="flex justify-between items-baseline mb-1">
+                      <h4 className="text-sm font-bold text-gray-600">B.S. Computer Science</h4>
+                      <span className="text-[10px] text-gray-500 font-sans">2014 — 2018</span>
+                    </div>
+                    <div className="text-[11px] text-gray-600 italic mb-4">University of Technology, Seattle</div>
+                    
+                    <div className="flex justify-between items-baseline mb-1">
+                      <h4 className="text-sm font-bold text-gray-600">Cloud Architecture Certificate</h4>
+                      <span className="text-[10px] text-gray-500 font-sans">2022</span>
+                    </div>
+                    <div className="text-[11px] text-gray-600 italic">AWS Certification Program</div>
+                  </div>
+
+                  {/* Projects Section - Warm Highlight */}
+                  <div 
+                    className={`mb-8 relative group ${getHighlightClass('warm', 'projects')} ${getPendingSuggestion('projects') ? 'cursor-pointer' : ''}`}
+                    onClick={(e) => handleSectionClick('projects', e)}
+                  >
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Projects</h3>
+                    
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-600">OpenSource Contributor</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2020 — Present</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600">
+                        Active contributor to several popular React ecosystem libraries. Maintained documentation and implemented accessibility fixes.
+                      </p>
+                    </div>
+
+                     <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-600">Tech Blog Author</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2019 — Present</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600">
+                        Writing weekly articles about distributed systems, cloud architecture, and engineering leadership.
+                      </p>
+                    </div>
+                    
+                    {activeSection === 'projects' && <SuggestionPopover sectionId="projects" />}
+                  </div>
+
+                  {/* Publications & Talks - Warm Highlight */}
+                  <div 
+                    className={`mb-8 relative group ${getHighlightClass('warm', 'publications')} ${getPendingSuggestion('publications') ? 'cursor-pointer' : ''}`}
+                    onClick={(e) => handleSectionClick('publications', e)}
+                  >
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Publications & Talks</h3>
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-600">Scaling Microservices at Edge</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">KubeCon 2023</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600 italic">
+                        Speaker at KubeCon NA, discussing strategies for deploying and managing stateful workloads at the edge.
+                      </p>
+                    </div>
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-600">The Future of Serverless</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">QCon 2022</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600 italic">
+                        Panel discussion on the evolving landscape of serverless computing and its impact on developer velocity.
+                      </p>
+                    </div>
+                    
+                    {activeSection === 'publications' && <SuggestionPopover sectionId="publications" />}
+                  </div>
+
+                  {/* Volunteering - Cool Highlight */}
+                  <div className={`mb-8 ${getHighlightClass('cool')}`}>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans px-2">Volunteering</h3>
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-600">Code for America</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2020 — 2022</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600">
+                        Contributed to open-source civic tech projects to help improve government services.
+                      </p>
+                    </div>
+                    <div className="mb-4">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <h4 className="text-sm font-bold text-gray-600">Tech Mentorship Program</h4>
+                        <span className="text-[10px] text-gray-500 font-sans">2019 — Present</span>
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-gray-600">
+                        Mentoring underrepresented students in computer science to help them land their first internships.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Languages */}
+                  <div className="mb-8">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Languages</h3>
+                    <div className="flex gap-4 text-[10px] text-gray-600">
+                       <span>English (Native)</span>
+                       <span className="text-gray-300">|</span>
+                       <span>Spanish (Professional Working)</span>
+                       <span className="text-gray-300">|</span>
+                       <span>French (Basic)</span>
+                    </div>
+                  </div>
+
+                   {/* Skills Section */}
+                   <div className={`mt-8 ${getHighlightClass('neutral', 'skills')}`}>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">Skills</h3>
+                    <div className="flex gap-2 flex-wrap text-[10px] text-gray-600 font-sans">
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">React</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">Node.js</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">AWS</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">Docker</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">Kubernetes</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">Go</span>
+                      <span className="bg-gray-100 px-2 py-1 rounded-sm">PostgreSQL</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Scanning Overlay */}
@@ -337,8 +541,8 @@ export default function Home() {
                   <motion.div
                     initial={{ top: "-10%" }}
                     animate={{ top: "110%" }}
-                    transition={{
-                      duration: 3,
+                    transition={{ 
+                      duration: 3, 
                       ease: "linear",
                       repeat: Infinity,
                       repeatDelay: 0.5
@@ -361,7 +565,7 @@ export default function Home() {
         )}>
           <AnimatePresence mode="wait">
             {state === "idle" ? (
-              <motion.div
+              <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -377,6 +581,8 @@ export default function Home() {
 
                 <div className="space-y-6 max-w-md mx-auto w-full">
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 font-sans text-center">ASSESSMENT | SUGGESTION | GROWTH</h3>
+                  
+                  
                 </div>
               </motion.div>
             ) : state === "scanning" ? (
@@ -388,18 +594,18 @@ export default function Home() {
                     </div>
                     {/* Skeletons */}
                     {[1, 2, 3].map((i) => (
-                      <motion.div
+                      <motion.div 
                         key={i}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.2 }}
-                        className="h-24 rounded-lg bg-gray-50 border border-gray-100"
+                        className="h-24 rounded-lg bg-gray-50 border border-gray-100" 
                       />
                     ))}
                  </div>
               </div>
             ) : (
-              <motion.div
+              <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
@@ -413,7 +619,7 @@ export default function Home() {
 
                 {/* Section 1: Strengths */}
                 <section>
-                  <motion.h2
+                  <motion.h2 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
@@ -423,8 +629,8 @@ export default function Home() {
                     What's working well
                   </motion.h2>
                   <div className="space-y-4">
-                    {strengths.map((paragraph, i) => (
-                      <motion.p
+                    {MOCK_STRENGTHS_PARAGRAPHS.map((paragraph, i) => (
+                      <motion.p 
                         key={i}
                         initial={{ opacity: 0, x: 10 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -437,9 +643,9 @@ export default function Home() {
                   </div>
                 </section>
 
-                {/* Section 2: Observations/Suggestions */}
+                {/* Section 2: Suggestions */}
                 <section>
-                  <motion.h2
+                  <motion.h2 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
@@ -449,22 +655,25 @@ export default function Home() {
                     Suggestions for improvement
                   </motion.h2>
                   <ul className="space-y-3">
-                    {observations.filter(o => o.status !== 'declined').map((observation, i) => {
-                      const isExpanded = expandedSuggestion === observation.id;
-                      const isHandled = observation.status !== 'pending';
+                    {MOCK_SUGGESTIONS.map((item, i) => {
+                      const status = suggestionStates[item.id] || "pending";
+                      const isExpanded = expandedSuggestion === item.id;
+                      const isHandled = status !== "pending";
+
+                      if (status === "declined") return null;
 
                       return (
-                        <motion.li
-                          key={observation.id}
+                        <motion.li 
+                          key={item.id}
                           layout
                           initial={{ opacity: 0, x: 10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.7 + (i * 0.1) }}
-                          onClick={() => !isHandled && handleSuggestionClick(observation.id)}
+                          onClick={() => !isHandled && handleSuggestionClick(item.id)}
                           className={cn(
                             "text-sm relative pl-6 pr-4 py-3 rounded-md transition-all border",
-                            isHandled
-                              ? "bg-green-50 border-green-100 text-green-800 cursor-default"
+                            isHandled 
+                              ? "bg-green-50 border-green-100 text-green-800 cursor-default" 
                               : "bg-white border-transparent hover:bg-gray-50 cursor-pointer hover:border-gray-200 hover:shadow-sm"
                           )}
                         >
@@ -472,10 +681,10 @@ export default function Home() {
                             "absolute left-2 top-4 w-1.5 h-1.5 rounded-full",
                             isHandled ? "bg-green-500" : "bg-amber-400"
                           )} />
-
+                          
                           <div className="flex justify-between items-start gap-4">
                             <span className={cn(isHandled && "font-medium")}>
-                              {observation.message}
+                              {item.title}
                             </span>
                             {isHandled && <Check className="w-4 h-4 text-green-600 mt-0.5" />}
                           </div>
@@ -489,20 +698,18 @@ export default function Home() {
                                 className="overflow-hidden"
                               >
                                 <div className="pt-3 pb-1">
-                                  {observation.proposal && (
-                                    <div className="bg-gray-50 p-3 rounded text-xs font-mono text-gray-600 border border-gray-100 mb-3">
-                                      {observation.proposal}
-                                    </div>
-                                  )}
+                                  <div className="bg-gray-50 p-3 rounded text-xs font-mono text-gray-600 border border-gray-100 mb-3">
+                                    {item.proposal}
+                                  </div>
                                   <div className="flex gap-2 justify-end">
-                                    <button
-                                      onClick={(e) => handleAction(observation.id, "declined", e)}
+                                    <button 
+                                      onClick={(e) => handleAction(item.id, "declined", e)}
                                       className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
                                     >
                                       Decline
                                     </button>
-                                    <button
-                                      onClick={(e) => handleAction(observation.id, "accepted", e)}
+                                    <button 
+                                      onClick={(e) => handleAction(item.id, "accepted", e)}
                                       className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded transition-colors shadow-sm"
                                     >
                                       Accept Change
@@ -519,7 +726,7 @@ export default function Home() {
                 </section>
 
                 {/* CTA */}
-                <motion.div
+                <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 2.0 }}

@@ -1,112 +1,18 @@
+import { sql } from "drizzle-orm";
+import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// ============================================
-// CV SECTION
-// ============================================
-
-export interface CVSection {
-  id: string;
-  type: 'job' | 'education' | 'skill' | 'project' | 'summary' | 'other';
-  title: string;
-  organization?: string;
-  startDate?: string;      // ISO date string
-  endDate?: string;        // ISO date string, null = present
-  duration?: number;       // computed: months
-  content: string;         // raw text of this section
-  wordCount: number;       // computed
-
-  // Parser metadata
-  parseConfidence: 'high' | 'medium' | 'low';
-
-  // Analyzer outputs (internal only, never sent to UI)
-  densityScore?: number;   // words per month
-  recencyScore?: number;   // months since end date
-  completeness?: {
-    hasMetrics: boolean;
-    hasOutcomes: boolean;
-    hasTools: boolean;
-    hasTeamSize: boolean;
-  };
-}
-
-// ============================================
-// OBSERVATION
-// ============================================
-
-export type ObservationType = 'density' | 'temporal' | 'structural';
-export type ObservationStatus = 'pending' | 'accepted' | 'declined' | 'locked';
-
-export interface Observation {
-  id: string;
-  sectionId: string;
-  type: ObservationType;
-  confidence: number;      // 0-1, internal only
-  signal: string;          // internal code: "sparse_density"
-  message: string;         // user-facing phrased observation
-  proposal?: string;       // suggested improvement text
-  status: ObservationStatus;
-}
-
-// ============================================
-// CV (ROOT OBJECT)
-// ============================================
-
-export interface CV {
-  id: string;
-  uploadedAt: string;      // ISO date string
-  fileName: string;
-  rawText: string;
-  sections: CVSection[];
-  observations: Observation[];
-  strengths: string[];     // 2-3 phrased strength statements
-}
-
-// ============================================
-// PARSE RESULT (internal)
-// ============================================
-
-export interface ParseResult {
-  sections: CVSection[];
-  unparsedContent: string[];   // chunks we couldn't classify
-  warnings: string[];          // parse issues
-  overallConfidence: 'high' | 'medium' | 'low';
-}
-
-// ============================================
-// API RESPONSE TYPES
-// ============================================
-
-export interface AnalyzeResponse {
-  cv: CV;
-  observations: Observation[];
-  strengths: string[];
-}
-
-export interface RewriteResponse {
-  original: string;
-  rewritten: string;
-}
-
-export interface ObservationResponse {
-  success: boolean;
-  observation: Observation;
-}
-
-export interface ErrorResponse {
-  error: string;
-  code: 'PARSE_FAILED' | 'FILE_TOO_SHORT' | 'UNSUPPORTED_FORMAT' | 'ANALYSIS_FAILED' | 'SECTION_NOT_FOUND';
-  details?: string;
-}
-
-// ============================================
-// ZOD VALIDATORS (for API input validation)
-// ============================================
-
-export const RewriteRequestSchema = z.object({
-  sectionId: z.string().min(1),
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
 });
 
-export const ObservationRespondSchema = z.object({
-  observationId: z.string().min(1),
-  response: z.enum(['accepted', 'declined', 'locked']),
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
 });
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
