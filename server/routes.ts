@@ -53,9 +53,10 @@ export async function registerRoutes(
 
         // Check if PDFParse is a class (Replit pattern) vs function (standard pattern)
         if (pdfParseModule.PDFParse) {
-          // PDFParse is a class - instantiate and use loadPDF method
-          const parser = new pdfParseModule.PDFParse();
-          pdfData = await parser.loadPDF(fileBuffer);
+          // PDFParse is a class - pass data in constructor, then call getText()
+          const parser = new pdfParseModule.PDFParse({ data: fileBuffer });
+          const textResult = await parser.getText();
+          pdfData = { text: textResult.text };
         } else {
           // Standard pattern - default export is a function
           const pdfParse = pdfParseModule.default || pdfParseModule;
