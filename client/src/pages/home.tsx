@@ -140,19 +140,21 @@ export default function Home() {
     const relatedObservations = observations.filter(o => o.sectionId === sectionId);
 
     if (relatedObservations.length === 0) {
-      return 'bg-transparent';
+      return '';
     }
 
     const allResolved = relatedObservations.every(o => o.status !== 'pending');
     const hasAccepted = relatedObservations.some(o => o.status === 'accepted');
 
-    const baseClasses = "-mx-4 px-4 py-4 rounded-sm transition-colors duration-1000 border border-transparent";
-
     if (allResolved && hasAccepted) {
-      return `${baseClasses} bg-[#E8F5E9] shadow-[0_0_15px_rgba(232,245,233,0.5)]`; // Green - resolved
+      return 'bg-green-50 border border-green-200 shadow-sm';
     }
 
-    return `${baseClasses} bg-[#FDF6E3] shadow-[0_0_15px_rgba(253,246,227,0.5)]`; // Yellow - pending
+    if (allResolved) {
+      return 'bg-gray-50 border border-gray-200';
+    }
+
+    return 'bg-amber-50 border border-amber-200 shadow-sm';
   };
 
   // Helper to get pending observation for a section
@@ -235,138 +237,192 @@ export default function Home() {
     );
   };
 
-  // Find which section a line belongs to (for highlighting)
-  const findSectionForLine = (lineIndex: number): CVSection | null => {
-    if (!cvData) return null;
+  // Helper to format content with basic structure
+  const formatContent = (content: string) => {
+    // Split into paragraphs/lines
+    const lines = content.split(/\n+/).filter(line => line.trim());
 
-    // Simple heuristic: check if line contains section title
-    const lines = cvData.rawText.split('\n');
-    const line = lines[lineIndex]?.trim();
-    if (!line) return null;
+    return (
+      <div className="space-y-2">
+        {lines.map((line, i) => {
+          const trimmed = line.trim();
 
-    for (const section of cvData.sections) {
-      if (section.title && line.includes(section.title.substring(0, 30))) {
-        return section;
-      }
-    }
-    return null;
+          // Detect bullet points
+          if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.match(/^\d+\./)) {
+            return (
+              <div key={i} className="flex gap-2 text-[11px] text-gray-600">
+                <span className="text-gray-400 shrink-0">•</span>
+                <span>{trimmed.replace(/^[•\-*]\s*/, '').replace(/^\d+\.\s*/, '')}</span>
+              </div>
+            );
+          }
+
+          // Regular paragraph
+          return (
+            <p key={i} className="text-[11px] leading-relaxed text-gray-600">
+              {trimmed}
+            </p>
+          );
+        })}
+      </div>
+    );
   };
 
-  // Render CV as original document - preserving PDF layout
-  const renderCVSections = () => {
-    if (!cvData) {
-      return (
-        <>
-          <div className="flex justify-between items-start border-b border-gray-300 pb-6 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-600 mb-1">Document Preview</h1>
-              <div className="flex gap-4 text-xs text-gray-500 font-sans uppercase tracking-wide">
-                <span>Uploaded CV</span>
-              </div>
-            </div>
-            <DisCreadisLogo />
+  // Improved section rendering
+  const renderSection = (section: CVSection) => {
+    const hasPending = !!getPendingObservation(section.id);
+    const highlightClass = getHighlightClass(section.id);
+
+    return (
+      <div
+        key={section.id}
+        className={cn(
+          "mb-6 p-4 rounded-lg transition-all duration-300",
+          highlightClass,
+          hasPending && "cursor-pointer hover:shadow-md",
+          !highlightClass && "bg-white"
+        )}
+        onClick={(e) => hasPending && handleSectionClick(section.id, e)}
+      >
+        {/* Section Header */}
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-gray-800">{section.title}</h4>
+            {section.organization && (
+              <p className="text-xs text-gray-500 mt-0.5">{section.organization}</p>
+            )}
           </div>
-          <p className="text-sm text-gray-500">CV content will appear here after analysis.</p>
-        </>
+          {(section.startDate || section.endDate) && (
+            <span className="text-[10px] text-gray-400 font-medium bg-gray-100 px-2 py-1 rounded shrink-0 ml-4">
+              {formatDateRange(section.startDate, section.endDate)}
+            </span>
+          )}
+        </div>
+
+        {/* Section Content */}
+        <div className="mt-3">
+          {formatContent(section.content)}
+        </div>
+
+        {/* Observation indicator */}
+        {hasPending && (
+          <div className="mt-3 flex items-center gap-2 text-amber-600">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span className="text-[10px] font-medium">Click to view suggestion</span>
+          </div>
+        )}
+
+        {activeSection === section.id && <SuggestionPopover sectionId={section.id} />}
+      </div>
+    );
+  };
+
+  // Main CV Preview component structure
+  const renderCVSections = () => {
+    if (!cvData || !cvData.sections.length) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-400">
+          <p>No CV content to display</p>
+        </div>
       );
     }
 
-    // Create a map of section start positions for highlighting
-    const sectionHighlights = new Map<string, { start: number; end: number; section: CVSection }>();
-
-    // Find positions of each section in rawText for highlighting
-    cvData.sections.forEach((section) => {
-      const startPos = cvData.rawText.indexOf(section.title);
-      if (startPos !== -1) {
-        // Find end of this section (start of next section or end of text)
-        let endPos = cvData.rawText.length;
-        cvData.sections.forEach((other) => {
-          if (other.id !== section.id) {
-            const otherStart = cvData.rawText.indexOf(other.title);
-            if (otherStart > startPos && otherStart < endPos) {
-              endPos = otherStart;
-            }
-          }
-        });
-        sectionHighlights.set(section.id, { start: startPos, end: endPos, section });
-      }
-    });
-
-    // Render raw text with section highlighting
-    const renderHighlightedText = () => {
-      const text = cvData.rawText;
-      const lines = text.split('\n');
-
-      // Build a map of line index to section
-      const lineToSection = new Map<number, CVSection>();
-      let charIndex = 0;
-
-      lines.forEach((line, lineIndex) => {
-        const lineStart = charIndex;
-        const lineEnd = charIndex + line.length;
-
-        sectionHighlights.forEach(({ start, end, section }) => {
-          if (lineStart >= start && lineStart < end) {
-            lineToSection.set(lineIndex, section);
-          }
-        });
-
-        charIndex = lineEnd + 1; // +1 for newline
-      });
-
-      // Render lines with highlighting
-      return lines.map((line, index) => {
-        const section = lineToSection.get(index);
-        const hasPending = section ? !!getPendingObservation(section.id) : false;
-        const highlightClass = section ? getHighlightClass(section.id) : '';
-
-        // Check if this is a section title line
-        const isTitle = section && line.trim() === section.title;
-
-        return (
-          <div
-            key={index}
-            className={cn(
-              "relative",
-              highlightClass && !isTitle ? highlightClass : "",
-              hasPending ? "cursor-pointer" : ""
-            )}
-            onClick={(e) => section && hasPending && handleSectionClick(section.id, e)}
-          >
-            <span className={cn(
-              "block",
-              isTitle ? "font-bold text-gray-800" : ""
-            )}>
-              {line || '\u00A0'}
-            </span>
-            {section && activeSection === section.id && index === lines.findIndex(l => l.trim() === section.title) && (
-              <SuggestionPopover sectionId={section.id} />
-            )}
-          </div>
-        );
-      });
-    };
+    // Group sections by type
+    const summary = cvData.sections.find(s => s.type === 'summary');
+    const jobs = cvData.sections.filter(s => s.type === 'job');
+    const education = cvData.sections.filter(s => s.type === 'education');
+    const skills = cvData.sections.filter(s => s.type === 'skill');
+    const projects = cvData.sections.filter(s => s.type === 'project');
+    const other = cvData.sections.filter(s => s.type === 'other');
 
     return (
-      <>
+      <div className="space-y-8">
         {/* Header */}
-        <div className="flex justify-between items-start border-b border-gray-300 pb-6 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-600 mb-1">
-              {cvData.fileName.replace(/\.(pdf|docx?)$/i, '')}
-            </h1>
-            <div className="text-xs text-gray-500 font-sans">
-              Uploaded {new Date(cvData.uploadedAt).toLocaleDateString()}
-            </div>
-          </div>
-          <DisCreadisLogo />
+        <div className="border-b border-gray-200 pb-6">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">
+            {cvData.fileName.replace(/\.(pdf|docx?)$/i, '').replace(/_/g, ' ')}
+          </h1>
+          <p className="text-xs text-gray-400">
+            Analyzed {new Date(cvData.uploadedAt).toLocaleDateString()}
+          </p>
         </div>
 
-        {/* Raw document content - preserving original layout */}
-        <div className="text-[11px] leading-relaxed text-gray-700 font-serif">
-          {renderHighlightedText()}
-        </div>
-      </>
+        {/* Summary */}
+        {summary && (
+          <section>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-blue-400 rounded-full" />
+              Summary
+            </h3>
+            {renderSection(summary)}
+          </section>
+        )}
+
+        {/* Experience */}
+        {jobs.length > 0 && (
+          <section>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-green-400 rounded-full" />
+              Experience
+            </h3>
+            <div className="space-y-4">
+              {jobs.map(renderSection)}
+            </div>
+          </section>
+        )}
+
+        {/* Education */}
+        {education.length > 0 && (
+          <section>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-purple-400 rounded-full" />
+              Education
+            </h3>
+            <div className="space-y-4">
+              {education.map(renderSection)}
+            </div>
+          </section>
+        )}
+
+        {/* Projects */}
+        {projects.length > 0 && (
+          <section>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-orange-400 rounded-full" />
+              Projects
+            </h3>
+            <div className="space-y-4">
+              {projects.map(renderSection)}
+            </div>
+          </section>
+        )}
+
+        {/* Skills */}
+        {skills.length > 0 && (
+          <section>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-teal-400 rounded-full" />
+              Skills
+            </h3>
+            <div className="space-y-4">
+              {skills.map(renderSection)}
+            </div>
+          </section>
+        )}
+
+        {/* Other */}
+        {other.length > 0 && (
+          <section>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <div className="w-1 h-4 bg-gray-400 rounded-full" />
+              Additional Information
+            </h3>
+            <div className="space-y-4">
+              {other.map(renderSection)}
+            </div>
+          </section>
+        )}
+      </div>
     );
   };
 
