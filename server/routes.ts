@@ -46,9 +46,20 @@ export async function registerRoutes(
 
       // Extract text based on file type
       if (mimeType === "application/pdf") {
-        // @ts-expect-error - pdf-parse has ESM/CJS interop issues
-        const pdfParse = (await import("pdf-parse")).default ?? (await import("pdf-parse"));
-        const pdfData = await pdfParse(fileBuffer);
+        // pdf-parse has ESM/CJS interop issues - need to handle multiple export patterns
+        const pdfParseModule = await import("pdf-parse") as { default?: unknown; [key: string]: unknown };
+        const pdfParse = pdfParseModule.default || pdfParseModule;
+
+        // pdf-parse might export a function directly or as a property
+        const pdfParseObj = pdfParse as { default?: unknown };
+        const parser = typeof pdfParse === 'function' ? pdfParse : pdfParseObj.default;
+
+        if (typeof parser !== 'function') {
+          console.error('pdf-parse module structure:', pdfParseModule);
+          throw new Error('Could not load PDF parser');
+        }
+
+        const pdfData = await (parser as (buffer: Buffer) => Promise<{ text: string }>)(fileBuffer);
         extractedText = pdfData.text;
       } else if (
         mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
