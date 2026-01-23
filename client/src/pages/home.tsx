@@ -4,6 +4,41 @@ import { Upload, Check, ChevronRight, Sparkles, Loader2, Leaf, Lock } from "luci
 import { cn } from "@/lib/utils";
 import type { CV, Observation, AnalyzeResponse, CVSection } from "@shared/schema";
 
+/**
+ * Decode filename that may have been incorrectly encoded
+ * Handles common encoding issues with Nordic/European characters
+ */
+function decodeFilename(filename: string): string {
+  try {
+    // First, try to fix mojibake (UTF-8 interpreted as Latin-1)
+    // This handles cases like "RÃ¦kby" → "Rækby"
+    const fixed = filename
+      .replace(/Ã¦/g, 'æ')
+      .replace(/Ã¸/g, 'ø')
+      .replace(/Ã¥/g, 'å')
+      .replace(/Ã†/g, 'Æ')
+      .replace(/Ã˜/g, 'Ø')
+      .replace(/Ã…/g, 'Å')
+      .replace(/Ã¼/g, 'ü')
+      .replace(/Ã¶/g, 'ö')
+      .replace(/Ã¤/g, 'ä')
+      .replace(/ÃŸ/g, 'ß')
+      .replace(/Ã©/g, 'é')
+      .replace(/Ã¨/g, 'è')
+      .replace(/Ã /g, 'à')
+      .replace(/Ã¢/g, 'â')
+      .replace(/Ã®/g, 'î')
+      .replace(/Ã´/g, 'ô')
+      .replace(/Ã»/g, 'û')
+      .replace(/Ã§/g, 'ç')
+      .replace(/Ã±/g, 'ñ');
+
+    return fixed;
+  } catch {
+    return filename;
+  }
+}
+
 // Types
 type AppState = "idle" | "scanning" | "complete";
 
@@ -164,15 +199,23 @@ export default function Home() {
 
   const handleSectionClick = (sectionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation(); // Prevent window listener from firing
     const pending = getPendingObservation(sectionId);
     if (pending) {
       setActiveSection(activeSection === sectionId ? null : sectionId);
     }
   };
 
-  // Close popover when clicking outside
+  // Close popover when clicking outside (but not on section cards or popovers)
   useEffect(() => {
-    const handleClickOutside = () => setActiveSection(null);
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't close if clicking inside a section card or the popover itself
+      if (target.closest('[data-section-card]') || target.closest('[data-suggestion-popover]')) {
+        return;
+      }
+      setActiveSection(null);
+    };
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
@@ -186,6 +229,7 @@ export default function Home() {
         initial={{ opacity: 0, y: 10, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10, scale: 0.95 }}
+        data-suggestion-popover
         className="absolute left-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden text-left"
         onClick={(e) => e.stopPropagation()}
       >
@@ -276,6 +320,7 @@ export default function Home() {
     return (
       <div
         key={section.id}
+        data-section-card
         className={cn(
           "mb-6 p-4 rounded-lg transition-all duration-300",
           highlightClass,
@@ -340,7 +385,7 @@ export default function Home() {
         {/* Header */}
         <div className="border-b border-gray-200 pb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-1">
-            {cvData.fileName.replace(/\.(pdf|docx?)$/i, '').replace(/_/g, ' ')}
+            {decodeFilename(cvData.fileName.replace(/\.(pdf|docx?)$/i, '').replace(/_/g, ' '))}
           </h1>
           <p className="text-xs text-gray-400">
             Analyzed {new Date(cvData.uploadedAt).toLocaleDateString()}
