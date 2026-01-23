@@ -603,6 +603,17 @@ export default function Home() {
                     <Sparkles className="w-3.5 h-3.5 text-gray-400" />
                     Suggestions for improvement
                   </motion.h2>
+
+                  {observations.filter(o => o.status !== 'declined').length === 0 ? (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.7 }}
+                      className="text-sm text-gray-500 italic"
+                    >
+                      This CV appears well-structured. No specific suggestions at this time.
+                    </motion.p>
+                  ) : (
                   <ul className="space-y-3">
                     {observations.filter(o => o.status !== 'declined').map((observation, i) => {
                       const isExpanded = expandedSuggestion === observation.id;
@@ -671,6 +682,7 @@ export default function Home() {
                       );
                     })}
                   </ul>
+                  )}
                 </section>
 
                 {/* CTA */}
