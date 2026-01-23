@@ -5,7 +5,7 @@ import mammoth from "mammoth";
 import { v4 as uuidv4 } from 'uuid';
 
 import { cvStorage } from "./storage";
-import { parseCV, validateParseResult } from "./engine/parser";
+import { parseWithLLM } from "./engine/llm-parser";
 import { generateObservations, createObservation, identifyStrengths } from "./engine/observationGenerator";
 import { phraseObservation, generateProposal, rewriteSection, phraseStrengths } from "./llm/claude";
 import { PARSE_THRESHOLDS } from "./engine/thresholds";
@@ -89,16 +89,12 @@ export async function registerRoutes(
         } as ErrorResponse);
       }
 
-      // Parse CV into structured sections
-      const parseResult = parseCV(extractedText, req.file.originalname);
+      // Parse CV into structured sections using LLM
+      const parseResult = await parseWithLLM(extractedText);
 
-      // Validate parse result
-      if (!validateParseResult(parseResult)) {
-        return res.status(400).json({
-          error: "Could not identify CV sections. Please ensure the CV has clear section headings.",
-          code: "PARSE_FAILED",
-          details: parseResult.warnings.join('; ')
-        } as ErrorResponse);
+      // Check if we got usable sections (but don't fail - show something even if parsing isn't perfect)
+      if (parseResult.sections.length === 0 || parseResult.overallConfidence === 'low') {
+        console.warn('CV parsing had issues:', parseResult.warnings);
       }
 
       // Generate raw observations

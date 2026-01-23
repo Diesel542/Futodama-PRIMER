@@ -259,16 +259,34 @@ function buildJobSection(
 }
 
 function mergeAndDedupe(headerSections: CVSection[], intelligentSections: CVSection[]): CVSection[] {
-  // Keep header-detected sections, add intelligent ones that don't overlap
-  const result = [...headerSections];
+  // If intelligent parser found jobs, prefer those over "other" type sections
+  const result: CVSection[] = [];
 
-  for (const intelligent of intelligentSections) {
-    // Check if this content is already covered
-    const isDuplicate = headerSections.some(h =>
-      h.content.includes(intelligent.title) || intelligent.content.includes(h.title)
+  for (const header of headerSections) {
+    // Check if an intelligent section should replace this one
+    const replacement = intelligentSections.find(intel =>
+      header.type === 'other' && (
+        intel.content.includes(header.title) ||
+        header.content.includes(intel.title) ||
+        header.title.includes(intel.title.substring(0, 30))
+      )
     );
 
-    if (!isDuplicate) {
+    if (replacement) {
+      // Use the intelligently detected section (has proper type: 'job')
+      result.push(replacement);
+    } else {
+      result.push(header);
+    }
+  }
+
+  // Add any intelligent sections that weren't replacements
+  for (const intelligent of intelligentSections) {
+    const alreadyIncluded = result.some(r =>
+      r.content.includes(intelligent.title) || intelligent.content.includes(r.title)
+    );
+
+    if (!alreadyIncluded) {
       result.push(intelligent);
     }
   }
