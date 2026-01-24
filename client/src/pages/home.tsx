@@ -4,7 +4,7 @@ import { Upload, Check, ChevronRight, Sparkles, Loader2, Leaf, Lock, FileText } 
 import { Document, Page, pdfjs } from 'react-pdf';
 
 // Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 import { cn } from "@/lib/utils";
 import type { CV, Observation, AnalyzeResponse, CVSection } from "@shared/schema";
 
