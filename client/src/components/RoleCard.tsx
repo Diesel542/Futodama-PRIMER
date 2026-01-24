@@ -95,9 +95,9 @@ export function RoleCard({
           "border-gray-200 dark:border-gray-700",
           // Temperature-aware background + left edge
           isAccepted
-            ? "bg-[#FAFDF9] dark:bg-[#1A1F1C] border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86]"
+            ? "bg-[#F2F9F2] dark:bg-[#1A1F1C] border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86]"
             : hasPendingSuggestion
-              ? "bg-[#FDFBF3] dark:bg-[#1F1E1A] border-l-4 border-l-[#F4E8B3] dark:border-l-[#C9B56A]"
+              ? "bg-[#FAF6E8] dark:bg-[#1F1E1A] border-l-4 border-l-[#F4E8B3] dark:border-l-[#C9B56A]"
               : "bg-white dark:bg-[#1A1D1F]"
         )}
       >
