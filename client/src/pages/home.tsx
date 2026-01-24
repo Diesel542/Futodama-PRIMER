@@ -6,6 +6,8 @@ import { Document, Page, pdfjs } from 'react-pdf';
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 import { cn } from "@/lib/utils";
+import { useSettings } from "../contexts/SettingsContext";
+import { SettingsDropdown } from "../components/SettingsDropdown";
 import type { CV, Observation, AnalyzeResponse, CVSection } from "@shared/schema";
 
 /**
@@ -94,6 +96,7 @@ const formatDateRange = (start?: string, end?: string): string => {
 };
 
 export default function Home() {
+  const { t, language } = useSettings();
   const [state, setState] = useState<AppState>("idle");
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -190,6 +193,9 @@ export default function Home() {
     try {
       const response = await fetch("/api/cv/analyze", {
         method: "POST",
+        headers: {
+          'X-Language': language,
+        },
         body: formData,
       });
 
@@ -492,7 +498,7 @@ export default function Home() {
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
               <div className="w-1 h-4 bg-blue-400 rounded-full" />
-              Summary
+              {t('section.summary')}
             </h3>
             {renderSection(summary)}
           </section>
@@ -503,7 +509,7 @@ export default function Home() {
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
               <div className="w-1 h-4 bg-green-400 rounded-full" />
-              Experience
+              {t('section.experience')}
             </h3>
             <div className="space-y-4">
               {jobs.map(renderSection)}
@@ -516,7 +522,7 @@ export default function Home() {
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
               <div className="w-1 h-4 bg-purple-400 rounded-full" />
-              Education
+              {t('section.education')}
             </h3>
             <div className="space-y-4">
               {education.map(renderSection)}
@@ -529,7 +535,7 @@ export default function Home() {
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
               <div className="w-1 h-4 bg-orange-400 rounded-full" />
-              Projects
+              {t('section.projects')}
             </h3>
             <div className="space-y-4">
               {projects.map(renderSection)}
@@ -542,7 +548,7 @@ export default function Home() {
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
               <div className="w-1 h-4 bg-teal-400 rounded-full" />
-              Skills
+              {t('section.skills')}
             </h3>
             <div className="space-y-4">
               {skills.map(renderSection)}
@@ -555,7 +561,7 @@ export default function Home() {
           <section>
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
               <div className="w-1 h-4 bg-gray-400 rounded-full" />
-              Additional Information
+              {t('section.other')}
             </h3>
             <div className="space-y-4">
               {other.map(renderSection)}
@@ -567,19 +573,22 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex font-sans selection:bg-gray-200">
+    <div className="min-h-screen bg-background text-foreground flex font-sans selection:bg-gray-200 dark:selection:bg-gray-700">
       {/* Left Pane: CV Preview */}
-      <div className="w-[60%] h-screen p-8 border-r border-border flex flex-col relative overflow-hidden bg-gray-50/50">
+      <div className="w-[60%] h-screen p-8 border-r border-border flex flex-col relative overflow-hidden bg-gray-50/50 dark:bg-gray-900">
         <header className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
              <div className="w-2 h-2 rounded-full bg-gray-400" />
-             CV Health Check
+             {t('app.title')}
           </div>
-          {state !== "idle" && (pdfFile || cvData) && (
-            <div className="text-xs text-gray-400 font-mono">
-              {decodeFilename(pdfFile?.name || cvData?.fileName || '')}
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {state !== "idle" && (pdfFile || cvData) && (
+              <div className="text-xs text-gray-400 font-mono">
+                {decodeFilename(pdfFile?.name || cvData?.fileName || '')}
+              </div>
+            )}
+            <SettingsDropdown />
+          </div>
         </header>
 
         <div className="flex-1 relative flex flex-col overflow-hidden">
@@ -595,24 +604,24 @@ export default function Home() {
                 <div className="w-full max-w-md">
                   <div
                     onClick={handleUpload}
-                    className="group relative flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-white transition-all cursor-pointer"
+                    className="group relative flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl hover:border-gray-400 dark:hover:border-gray-500 hover:bg-white dark:hover:bg-gray-800 transition-all cursor-pointer"
                   >
-                    <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <Upload className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+                    <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <Upload className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">Upload CV</h3>
-                    <p className="text-sm text-gray-500 text-center mb-6">
-                      Drag and drop or click to select<br/>
-                      <span className="text-xs opacity-70">PDF or DOCX supported</span>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('upload.title')}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
+                      {t('upload.subtitle')}<br/>
+                      <span className="text-xs opacity-70">{t('upload.formats')}</span>
                     </p>
                     {uploadError && (
                       <p className="text-sm text-red-600 mb-4 text-center">{uploadError}</p>
                     )}
                     <button
-                      className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                       data-testid="button-choose-file"
                     >
-                      Choose File
+                      {t('upload.button')}
                     </button>
                   </div>
                 </div>
@@ -682,7 +691,7 @@ export default function Home() {
         </div>
       </div>
       {/* Right Pane: Analysis Results */}
-      <div className="w-[40%] h-screen overflow-y-auto bg-white">
+      <div className="w-[40%] h-screen overflow-y-auto bg-white dark:bg-gray-950">
         <div className={cn(
           "max-w-xl mx-auto p-12 transition-all duration-500",
           (state === "idle" || state === "previewing") ? "h-full flex flex-col justify-center" : "pt-24"
@@ -699,8 +708,8 @@ export default function Home() {
                    <div className="mb-8 flex justify-center">
                       <Leaf className="w-24 h-24 text-[#6FC295]" strokeWidth={1.5} />
                    </div>
-                   <h2 className="text-4xl font-medium text-gray-900 mb-4 tracking-tight">CV Health Check</h2>
-                   <p className="text-lg text-gray-500 leading-relaxed max-w-sm mx-auto">This automated caretaker evaluates a CV and suggests improvements aligned to the CREADIS Quality Standard.</p>
+                   <h2 className="text-4xl font-medium text-gray-900 dark:text-gray-100 mb-4 tracking-tight">{t('app.title')}</h2>
+                   <p className="text-lg text-gray-500 dark:text-gray-400 leading-relaxed max-w-sm mx-auto">This automated caretaker evaluates a CV and suggests improvements aligned to the CREADIS Quality Standard.</p>
                 </div>
 
                 <div className="space-y-6 max-w-md mx-auto w-full">
@@ -717,12 +726,12 @@ export default function Home() {
               >
                 <div className="mb-12 text-center">
                   <div className="mb-6 flex justify-center">
-                    <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
                       <FileText className="w-8 h-8 text-blue-500" />
                     </div>
                   </div>
-                  <h2 className="text-2xl font-medium text-gray-900 mb-2 tracking-tight">Ready to Analyze</h2>
-                  <p className="text-sm text-gray-500 mb-1">
+                  <h2 className="text-2xl font-medium text-gray-900 dark:text-gray-100 mb-2 tracking-tight">{t('preview.title')}</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                     {pdfFile?.name}
                   </p>
                   <p className="text-xs text-gray-400">
@@ -731,8 +740,8 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-4 max-w-sm mx-auto">
-                  <p className="text-sm text-gray-600 text-center leading-relaxed">
-                    Review the document preview, then click below to analyze and convert to CREADIS format.
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center leading-relaxed">
+                    {t('preview.description')}
                   </p>
 
                   <button
@@ -740,14 +749,14 @@ export default function Home() {
                     className="w-full px-6 py-3 bg-[#1a3a2a] text-white font-medium rounded-lg hover:bg-[#2a4a3a] transition-colors shadow-sm flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
-                    Analyze CV
+                    {t('preview.analyze')}
                   </button>
 
                   <button
                     onClick={handleCancel}
-                    className="w-full px-6 py-3 text-gray-500 font-medium rounded-lg hover:bg-gray-100 transition-colors text-sm"
+                    className="w-full px-6 py-3 text-gray-500 dark:text-gray-400 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm"
                   >
-                    Cancel
+                    {t('preview.cancel')}
                   </button>
                 </div>
               </motion.div>
@@ -760,9 +769,9 @@ export default function Home() {
                 className="space-y-12 pt-8"
               >
                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-sm text-gray-500 mb-6">
+                    <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-6">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Analyzing structure and content...
+                      {t('scanning.title')}
                     </div>
                     {/* Skeletons */}
                     {[1, 2, 3].map((i) => (
@@ -771,7 +780,7 @@ export default function Home() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.2 }}
-                        className="h-24 rounded-lg bg-gray-50 border border-gray-100"
+                        className="h-24 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700"
                       />
                     ))}
                  </div>
@@ -784,9 +793,9 @@ export default function Home() {
                 className="space-y-10"
               >
                 {/* Header */}
-                <div className="flex items-center gap-3 pb-6 border-b border-gray-100">
+                <div className="flex items-center gap-3 pb-6 border-b border-gray-100 dark:border-gray-800">
                   <Leaf className="w-6 h-6 text-[#6FC295]" strokeWidth={1.5} />
-                  <h1 className="text-xl font-medium text-gray-900 tracking-tight">Analysis Complete</h1>
+                  <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100 tracking-tight">{t('complete.title')}</h1>
                 </div>
 
                 {/* Section 1: Strengths */}
@@ -795,10 +804,10 @@ export default function Home() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-2"
+                    className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2"
                   >
                     <Check className="w-3.5 h-3.5 text-gray-400" />
-                    What's working well
+                    {t('complete.strengths')}
                   </motion.h2>
                   <div className="space-y-4">
                     {strengths.map((paragraph, i) => (
@@ -807,7 +816,7 @@ export default function Home() {
                         initial={{ opacity: 0, x: 10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.2 + (i * 0.1) }}
-                        className="text-sm text-gray-700 leading-relaxed border-l-2 border-gray-100 pl-4"
+                        className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed border-l-2 border-gray-100 dark:border-gray-700 pl-4"
                       >
                         {paragraph}
                       </motion.p>
@@ -821,10 +830,10 @@ export default function Home() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4 flex items-center gap-2"
+                    className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-gray-400" />
-                    Suggestions for improvement
+                    {t('complete.suggestions')}
                   </motion.h2>
 
                   {observations.filter(o => o.status !== 'declined').length === 0 ? (
@@ -832,9 +841,9 @@ export default function Home() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.7 }}
-                      className="text-sm text-gray-500 italic"
+                      className="text-sm text-gray-500 dark:text-gray-400 italic"
                     >
-                      This CV appears well-structured. No specific suggestions at this time.
+                      {t('complete.noSuggestions')}
                     </motion.p>
                   ) : (
                   <ul className="space-y-3">
