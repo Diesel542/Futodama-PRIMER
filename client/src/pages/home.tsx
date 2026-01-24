@@ -337,7 +337,7 @@ export default function Home() {
 
     return (
       <div className="mb-8">
-        <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 pl-1">
+        <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-4 pl-1">
           {title}
         </h2>
         <div className="relative">
@@ -545,7 +545,7 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-6 max-w-md mx-auto w-full">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 font-sans text-center">ASSESSMENT | SUGGESTION | GROWTH</h3>
+                  <h3 className="text-xs font-bold text-gray-400 mb-6 font-sans text-center">Assessment | Suggestion | Growth</h3>
                 </div>
               </motion.div>
             ) : state === "previewing" ? (
@@ -636,7 +636,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2"
+                    className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2"
                   >
                     <Check className="w-3.5 h-3.5 text-gray-400" />
                     {t('complete.strengths')}
@@ -662,7 +662,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2"
+                    className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-gray-400" />
                     {t('complete.suggestions')}

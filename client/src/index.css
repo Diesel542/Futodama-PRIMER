@@ -32,6 +32,12 @@
   --accent-green: #10B981;
   --accent-green-soft: #D1FAE5;
 
+  /* Temperature indicators - ONLY for status markers */
+  --temp-pending: #E5C07B;        /* Soft pastel amber */
+  --temp-pending-subtle: #FDF6E3; /* Very light amber tint */
+  --temp-healthy: #7CB386;        /* Desaturated sage green */
+  --temp-healthy-subtle: #EDF7EE; /* Very light green tint */
+
   /* Spacing */
   --space-xs: 0.25rem;   /* 4px */
   --space-sm: 0.5rem;    /* 8px */

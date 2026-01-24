@@ -73,30 +73,31 @@ export function RoleCard({
 
   return (
     <div className="relative">
-      {/* Timeline dot */}
+      {/* Timeline dot - temperature colors allowed here */}
       <div
         className={cn(
           "absolute -left-8 top-6 w-3 h-3 rounded-full border-2 bg-white dark:bg-gray-900",
           isAccepted
-            ? "border-green-500"
+            ? "border-[#7CB386]"
             : hasPendingSuggestion
-              ? "border-amber-500"
+              ? "border-[#E5C07B]"
               : "border-gray-300 dark:border-gray-600"
         )}
       />
 
-      {/* Card */}
+      {/* Card - grey border with left-edge temperature accent */}
       <motion.div
         layout
         className={cn(
           "bg-white dark:bg-gray-800 rounded-xl border transition-shadow duration-200",
           "shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]",
           "hover:shadow-[0_4px_6px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.04)]",
+          "border-gray-200 dark:border-gray-700",
           isAccepted
-            ? "border-green-200 dark:border-green-800"
+            ? "border-l-2 border-l-[#7CB386]"
             : hasPendingSuggestion
-              ? "border-amber-200 dark:border-amber-800"
-              : "border-gray-200 dark:border-gray-700"
+              ? "border-l-2 border-l-[#E5C07B]"
+              : ""
         )}
       >
         {/* Card Header */}
@@ -134,16 +135,16 @@ export function RoleCard({
             })}
           </div>
 
-          {/* Suggestion Trigger */}
+          {/* Suggestion Trigger - neutral grey text */}
           {hasPendingSuggestion && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className={cn(
                 "mt-4 flex items-center gap-2 text-sm font-medium transition-colors",
-                "text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
+                "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               )}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 text-gray-400" />
               <span>{t('complete.clickToView')}</span>
               <ChevronDown className={cn(
                 "w-4 h-4 transition-transform",
@@ -152,9 +153,9 @@ export function RoleCard({
             </button>
           )}
 
-          {/* Accepted indicator */}
+          {/* Accepted indicator - neutral grey */}
           {isAccepted && (
-            <div className="mt-4 flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
+            <div className="mt-4 flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400">
               <Check className="w-4 h-4" />
               <span>{t('suggestion.applied')}</span>
             </div>
@@ -172,9 +173,9 @@ export function RoleCard({
               className="overflow-hidden"
             >
               <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-5">
-                {/* Observation message */}
+                {/* Observation message - neutral grey icon */}
                 <div className="flex gap-3 mb-4">
-                  <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                  <Sparkles className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                   <p className="text-sm text-gray-700 dark:text-gray-300">
                     {observation.message}
                   </p>
@@ -183,14 +184,14 @@ export function RoleCard({
                 {/* Add Info: Input needed */}
                 {observation.actionType === 'add_info' && !observation.rewrittenContent && (
                   <div className="space-y-3">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                       {observation.inputPrompt}
                     </label>
                     <textarea
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
                       placeholder={t('input.placeholder')}
-                      className="w-full p-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                      className="w-full p-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
                       rows={3}
                       disabled={isProcessing}
                     />
@@ -204,7 +205,7 @@ export function RoleCard({
                       <button
                         onClick={handleSubmit}
                         disabled={!userInput.trim() || isProcessing}
-                        className="px-4 py-2 text-sm font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        className="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                       >
                         {isProcessing ? (
                           <>
@@ -222,10 +223,10 @@ export function RoleCard({
                 {/* Rewrite or Add Info with generated content: Show preview */}
                 {observation.rewrittenContent && (
                   <div className="space-y-3">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                       {t('complete.suggestedChange')}
                     </label>
-                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-l-2 border-l-[#7CB386] rounded-lg">
                       <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {observation.rewrittenContent}
                       </p>
@@ -240,7 +241,7 @@ export function RoleCard({
                       </button>
                       <button
                         onClick={handleApply}
-                        className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                        className="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
                       >
                         <Check className="w-4 h-4" />
                         {t('complete.apply')}
