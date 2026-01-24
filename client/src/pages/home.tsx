@@ -694,20 +694,20 @@ export default function Home() {
                           className={cn(
                             "text-sm relative pl-6 pr-4 py-3 rounded-md transition-all border",
                             isHandled
-                              ? "bg-green-50 dark:bg-green-900/30 border-green-100 dark:border-green-800 text-green-800 dark:text-green-200 cursor-default"
-                              : "bg-white dark:bg-gray-800 border-transparent hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm"
+                              ? "bg-[var(--temp-healthy-subtle)] border-[var(--temp-healthy)] text-gray-800 dark:text-gray-200 cursor-default"
+                              : "bg-[var(--card-bg)] border-transparent hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm"
                           )}
                         >
                           <div className={cn(
                             "absolute left-2 top-4 w-1.5 h-1.5 rounded-full",
-                            isHandled ? "bg-green-500" : "bg-amber-400"
+                            isHandled ? "bg-[var(--temp-healthy)]" : "bg-[var(--temp-warn)]"
                           )} />
 
                           <div className="flex justify-between items-start gap-4">
                             <span className={cn("text-gray-700 dark:text-gray-200", isHandled && "font-medium")}>
                               {observation.message}
                             </span>
-                            {isHandled && <Check className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5" />}
+                            {isHandled && <Check className="w-4 h-4 text-[var(--temp-healthy)] mt-0.5" />}
                           </div>
 
                           <AnimatePresence>
