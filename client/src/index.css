@@ -32,11 +32,14 @@
   --accent-green: #10B981;
   --accent-green-soft: #D1FAE5;
 
-  /* Temperature indicators - ONLY for status markers */
-  --temp-pending: #E5C07B;        /* Soft pastel amber */
-  --temp-pending-subtle: #FDF6E3; /* Very light amber tint */
-  --temp-healthy: #7CB386;        /* Desaturated sage green */
+  /* Temperature indicators - Light Mode */
+  --temp-warn: #F4E8B3;           /* Soft pastel yellow */
+  --temp-warn-subtle: #FDF9E8;    /* Very light yellow tint */
+  --temp-healthy: #D7F1D6;        /* Muted clean green */
   --temp-healthy-subtle: #EDF7EE; /* Very light green tint */
+
+  /* Card backgrounds */
+  --card-bg: #FFFFFF;
 
   /* Spacing */
   --space-xs: 0.25rem;   /* 4px */
@@ -92,6 +95,15 @@
 
 /* Dark theme overrides */
 .dark {
+  /* Temperature indicators - Dark Mode */
+  --temp-warn: #C9B56A;           /* Deeper desaturated yellow */
+  --temp-warn-subtle: #2A2820;    /* Dark amber tint */
+  --temp-healthy: #7BAF86;        /* Desaturated green for dark */
+  --temp-healthy-subtle: #1A231C; /* Dark green tint */
+
+  /* Card backgrounds - slightly lifted for contrast */
+  --card-bg: #1A1D1F;             /* Not pure black, allows strip visibility */
+
   --color-background: hsl(220 13% 8%);
   --color-foreground: hsl(210 20% 98%);
 
