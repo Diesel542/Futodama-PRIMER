@@ -33,6 +33,9 @@ export async function registerRoutes(
   // ============================================
   app.post("/api/cv/analyze", upload.single("file"), async (req, res) => {
     try {
+      // Get language from header
+      const language = (req.headers['x-language'] as string) || 'en';
+
       if (!req.file) {
         return res.status(400).json({
           error: "No file uploaded",
@@ -113,8 +116,8 @@ export async function registerRoutes(
             gapMonths: raw.context.gapMonths as number | undefined,
             completeness: raw.context.completeness as { hasMetrics: boolean; hasOutcomes: boolean; hasTools: boolean; hasTeamSize: boolean } | undefined,
           };
-          const message = await phraseObservation(observationContext);
-          const proposal = await generateProposal(raw.signal, (raw.context.sectionTitle as string) || 'Section');
+          const message = await phraseObservation(observationContext, language);
+          const proposal = await generateProposal(raw.signal, (raw.context.sectionTitle as string) || 'Section', language);
           return createObservation(raw, message, proposal);
         })
       );
@@ -124,7 +127,7 @@ export async function registerRoutes(
       const sectionSummaries = parseResult.sections
         .slice(0, 5)
         .map(s => `${s.title}: ${s.content.substring(0, 100)}...`);
-      const strengths = await phraseStrengths(strengthSignals, sectionSummaries);
+      const strengths = await phraseStrengths(strengthSignals, sectionSummaries, language);
 
       // Build CV object
       const cv: CV = {
