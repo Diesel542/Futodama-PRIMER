@@ -8,6 +8,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 import { cn } from "@/lib/utils";
 import { useSettings } from "../contexts/SettingsContext";
 import { SettingsDropdown } from "../components/SettingsDropdown";
+import { RoleCard } from "../components/RoleCard";
 import type { CV, Observation, AnalyzeResponse, CVSection } from "@shared/schema";
 
 /**
@@ -99,7 +100,6 @@ export default function Home() {
   const { t, language } = useSettings();
   const [state, setState] = useState<AppState>("idle");
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // PDF preview state
@@ -269,350 +269,100 @@ export default function Home() {
     setExpandedSuggestion(null);
   };
 
-  // Helper to get highlight class based on observation state
-  const getHighlightClass = (sectionId: string) => {
-    if (state !== 'complete' || !observations.length) return '';
+  // Handlers for RoleCard
+  const handleApply = (observationId: string, newContent: string) => {
+    const obs = observations.find(o => o.id === observationId);
+    if (!obs) return;
 
-    const observation = observations.find(o => o.sectionId === sectionId);
+    // Update CV content
+    setCvData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        sections: prev.sections.map(section =>
+          section.id === obs.sectionId
+            ? { ...section, content: newContent }
+            : section
+        ),
+      };
+    });
 
-    if (!observation) return '';
-
-    if (observation.status === 'accepted') {
-      return 'bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400';
-    }
-
-    if (observation.status === 'declined' || observation.status === 'locked') {
-      return ''; // No highlight for declined or locked
-    }
-
-    // Pending, awaiting_input, or processing
-    return 'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-400';
+    // Mark as accepted
+    setObservations(prev => prev.map(o =>
+      o.id === observationId ? { ...o, status: 'accepted' } : o
+    ));
   };
 
-  // Helper to get pending observation for a section (now handles all active states)
-  const getPendingObservation = (sectionId: string) => {
-    return observations.find(o =>
-      o.sectionId === sectionId &&
-      !['accepted', 'declined', 'locked'].includes(o.status)
-    );
+  const handleLock = (observationId: string) => {
+    setObservations(prev => prev.map(o =>
+      o.id === observationId ? { ...o, status: 'locked' } : o
+    ));
   };
 
-  const handleSectionClick = (sectionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation(); // Prevent window listener from firing
-    const pending = getPendingObservation(sectionId);
-    if (pending) {
-      setActiveSection(activeSection === sectionId ? null : sectionId);
-    }
+  const handleSubmitInput = async (observationId: string, input: string) => {
+    const obs = observations.find(o => o.id === observationId);
+    if (!obs || !cvData) return;
+
+    const section = cvData.sections.find(s => s.id === obs.sectionId);
+    if (!section) return;
+
+    const response = await fetch('/api/cv/process-input', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Language': language,
+      },
+      body: JSON.stringify({
+        observationId,
+        sectionId: obs.sectionId,
+        userInput: input,
+        section,
+      }),
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    setObservations(prev => prev.map(o =>
+      o.id === observationId
+        ? { ...o, rewrittenContent: data.rewrittenContent, proposal: data.proposal }
+        : o
+    ));
   };
 
-  // Close popover when clicking outside (but not on section cards or popovers)
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      // Don't close if clicking inside a section card or the popover itself
-      if (target.closest('[data-section-card]') || target.closest('[data-suggestion-popover]')) {
-        return;
-      }
-      setActiveSection(null);
-    };
-    window.addEventListener('click', handleClickOutside);
-    return () => window.removeEventListener('click', handleClickOutside);
-  }, []);
-
-  const SuggestionPopover = ({ sectionId }: { sectionId: string }) => {
-    const observation = observations.find(o =>
-      o.sectionId === sectionId &&
-      !['accepted', 'declined', 'locked'].includes(o.status)
-    );
-    const [userInput, setUserInput] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false);
-
-    if (!observation) return null;
-
-    const handleSubmitInput = async () => {
-      if (!userInput.trim() || !cvData) return;
-
-      setIsProcessing(true);
-
-      // Find the section
-      const section = cvData.sections.find(s => s.id === observation.sectionId);
-      if (!section) {
-        setIsProcessing(false);
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/cv/process-input', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Language': language,
-          },
-          body: JSON.stringify({
-            observationId: observation.id,
-            sectionId: observation.sectionId,
-            userInput: userInput.trim(),
-            section: section,
-          }),
-        });
-
-        if (!response.ok) throw new Error('Failed to process');
-
-        const data = await response.json();
-
-        // Update observation with generated content
-        setObservations(prev => prev.map(o =>
-          o.id === observation.id
-            ? { ...o, rewrittenContent: data.rewrittenContent, proposal: data.proposal }
-            : o
-        ));
-
-        setUserInput('');
-
-      } catch (error) {
-        console.error('Failed to process input:', error);
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    const handleApply = () => {
-      if (!observation.rewrittenContent || !cvData) return;
-
-      // Update the CV section content
-      setCvData(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          sections: prev.sections.map(section =>
-            section.id === observation.sectionId
-              ? { ...section, content: observation.rewrittenContent! }
-              : section
-          ),
-        };
-      });
-
-      // Mark observation as accepted
-      setObservations(prev => prev.map(o =>
-        o.id === observation.id ? { ...o, status: 'accepted' as const } : o
-      ));
-
-      setActiveSection(null);
-    };
-
-    const handleLock = () => {
-      setObservations(prev => prev.map(o =>
-        o.id === observation.id ? { ...o, status: 'locked' as const } : o
-      ));
-      setActiveSection(null);
-    };
-
-    const handleDecline = () => {
-      setObservations(prev => prev.map(o =>
-        o.id === observation.id ? { ...o, status: 'declined' as const } : o
-      ));
-      setActiveSection(null);
-    };
-
-    // Render based on action type and state
-    const renderContent = () => {
-      // ADD_INFO: Needs user input first (and no rewrittenContent yet)
-      if (observation.actionType === 'add_info' && !observation.rewrittenContent) {
-        return (
-          <>
-            <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-              <div className="flex gap-3 items-start">
-                <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
-                  {observation.message}
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 dark:bg-gray-900">
-              <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">
-                {observation.inputPrompt}
-              </label>
-              <textarea
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                placeholder={t('input.placeholder')}
-                className="w-full p-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                rows={3}
-                disabled={isProcessing}
-              />
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => setActiveSection(null)}
-                  className="flex-1 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-                >
-                  {t('complete.back')}
-                </button>
-                <button
-                  onClick={handleSubmitInput}
-                  disabled={!userInput.trim() || isProcessing}
-                  className="flex-1 px-3 py-2 text-xs font-medium bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      {t('processing')}
-                    </>
-                  ) : (
-                    t('submit')
-                  )}
-                </button>
-              </div>
-            </div>
-          </>
-        );
-      }
-
-      // REWRITE or ADD_INFO with generated content: Show preview
-      return (
-        <>
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-            <div className="flex gap-3 items-start">
-              <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
-                {observation.message}
-              </p>
-            </div>
-          </div>
-
-          <div className="p-4 bg-white dark:bg-gray-900">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                {t('complete.suggestedChange')}
-              </span>
-              <button
-                onClick={() => setActiveSection(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <span className="text-[10px]">{t('complete.back')}</span>
-              </button>
-            </div>
-
-            {/* Preview of new content */}
-            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg mb-3 max-h-40 overflow-y-auto">
-              <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                {observation.rewrittenContent}
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={handleLock}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors border border-gray-200 dark:border-gray-600"
-              >
-                <Lock className="w-3 h-3" />
-                {t('complete.lock')}
-              </button>
-              <button
-                onClick={handleApply}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              >
-                <Check className="w-3 h-3" />
-                {t('complete.apply')}
-              </button>
-            </div>
-          </div>
-        </>
-      );
-    };
+  // Render section group with timeline
+  const renderSectionGroup = (title: string, sections: CVSection[]) => {
+    if (sections.length === 0) return null;
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-        data-suggestion-popover
-        className="absolute left-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden text-left"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {renderContent()}
-      </motion.div>
-    );
-  };
+      <div className="mb-8">
+        <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 pl-1">
+          {title}
+        </h2>
+        <div className="relative">
+          {/* Timeline spine */}
+          <div className="absolute left-1.5 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
 
-  // Helper to format content with basic structure
-  const formatContent = (content: string) => {
-    // Split into paragraphs/lines
-    const lines = content.split(/\n+/).filter(line => line.trim());
-
-    return (
-      <div className="space-y-2">
-        {lines.map((line, i) => {
-          const trimmed = line.trim();
-
-          // Detect bullet points
-          if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.match(/^\d+\./)) {
-            return (
-              <div key={i} className="flex gap-2 text-[11px] text-gray-600">
-                <span className="text-gray-400 shrink-0">•</span>
-                <span>{trimmed.replace(/^[•\-*]\s*/, '').replace(/^\d+\.\s*/, '')}</span>
-              </div>
-            );
-          }
-
-          // Regular paragraph
-          return (
-            <p key={i} className="text-[11px] leading-relaxed text-gray-600">
-              {trimmed}
-            </p>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Improved section rendering
-  const renderSection = (section: CVSection) => {
-    const hasPending = !!getPendingObservation(section.id);
-    const highlightClass = getHighlightClass(section.id);
-
-    return (
-      <div
-        key={section.id}
-        data-section-card
-        className={cn(
-          "relative mb-6 p-4 rounded-lg transition-all duration-300",
-          highlightClass,
-          hasPending && "cursor-pointer hover:shadow-md",
-          !highlightClass && "bg-white"
-        )}
-        onClick={(e) => hasPending && handleSectionClick(section.id, e)}
-      >
-        {/* Section Header */}
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex-1">
-            <h4 className="text-sm font-semibold text-gray-800">{section.title}</h4>
-            {section.organization && (
-              <p className="text-xs text-gray-500 mt-0.5">{section.organization}</p>
-            )}
+          {/* Section cards */}
+          <div className="space-y-4 pl-8">
+            {sections.map(section => {
+              const obs = observations.find(o => o.sectionId === section.id);
+              return (
+                <RoleCard
+                  key={section.id}
+                  section={section}
+                  observation={obs}
+                  onApply={handleApply}
+                  onLock={handleLock}
+                  onSubmitInput={handleSubmitInput}
+                  t={t}
+                  language={language}
+                />
+              );
+            })}
           </div>
-          {(section.startDate || section.endDate) && (
-            <span className="text-[10px] text-gray-400 font-medium bg-gray-100 px-2 py-1 rounded shrink-0 ml-4">
-              {formatDateRange(section.startDate, section.endDate)}
-            </span>
-          )}
         </div>
-
-        {/* Section Content */}
-        <div className="mt-3">
-          {formatContent(section.content)}
-        </div>
-
-        {/* Observation indicator */}
-        {hasPending && (
-          <div className="mt-3 flex items-center gap-2 text-amber-600">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-            <span className="text-[10px] font-medium">Click to view suggestion</span>
-          </div>
-        )}
-
-        {activeSection === section.id && <SuggestionPopover sectionId={section.id} />}
       </div>
     );
   };
@@ -628,101 +378,16 @@ export default function Home() {
     }
 
     // Group sections by type
-    const summary = cvData.sections.find(s => s.type === 'summary');
     const jobs = cvData.sections.filter(s => s.type === 'job');
     const education = cvData.sections.filter(s => s.type === 'education');
-    const skills = cvData.sections.filter(s => s.type === 'skill');
-    const projects = cvData.sections.filter(s => s.type === 'project');
-    const other = cvData.sections.filter(s => s.type === 'other');
+    const otherSections = cvData.sections.filter(s => !['job', 'education'].includes(s.type));
 
     return (
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="border-b border-gray-200 pb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-1">
-            {decodeFilename(cvData.fileName.replace(/\.(pdf|docx?)$/i, '').replace(/_/g, ' '))}
-          </h1>
-          <p className="text-xs text-gray-400">
-            Analyzed {new Date(cvData.uploadedAt).toLocaleDateString()}
-          </p>
-        </div>
-
-        {/* Summary */}
-        {summary && (
-          <section>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <div className="w-1 h-4 bg-blue-400 rounded-full" />
-              {t('section.summary')}
-            </h3>
-            {renderSection(summary)}
-          </section>
-        )}
-
-        {/* Experience */}
-        {jobs.length > 0 && (
-          <section>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <div className="w-1 h-4 bg-green-400 rounded-full" />
-              {t('section.experience')}
-            </h3>
-            <div className="space-y-4">
-              {jobs.map(renderSection)}
-            </div>
-          </section>
-        )}
-
-        {/* Education */}
-        {education.length > 0 && (
-          <section>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <div className="w-1 h-4 bg-purple-400 rounded-full" />
-              {t('section.education')}
-            </h3>
-            <div className="space-y-4">
-              {education.map(renderSection)}
-            </div>
-          </section>
-        )}
-
-        {/* Projects */}
-        {projects.length > 0 && (
-          <section>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <div className="w-1 h-4 bg-orange-400 rounded-full" />
-              {t('section.projects')}
-            </h3>
-            <div className="space-y-4">
-              {projects.map(renderSection)}
-            </div>
-          </section>
-        )}
-
-        {/* Skills */}
-        {skills.length > 0 && (
-          <section>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <div className="w-1 h-4 bg-teal-400 rounded-full" />
-              {t('section.skills')}
-            </h3>
-            <div className="space-y-4">
-              {skills.map(renderSection)}
-            </div>
-          </section>
-        )}
-
-        {/* Other */}
-        {other.length > 0 && (
-          <section>
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <div className="w-1 h-4 bg-gray-400 rounded-full" />
-              {t('section.other')}
-            </h3>
-            <div className="space-y-4">
-              {other.map(renderSection)}
-            </div>
-          </section>
-        )}
-      </div>
+      <>
+        {renderSectionGroup(t('section.experience'), jobs)}
+        {renderSectionGroup(t('section.education'), education)}
+        {renderSectionGroup(t('section.other'), otherSections)}
+      </>
     );
   };
 
@@ -834,9 +499,22 @@ export default function Home() {
                 key="complete"
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex-1 flex flex-col max-w-[750px] mx-auto w-full bg-white shadow-xl rounded-sm border border-gray-200 relative overflow-hidden"
+                className="flex-1 overflow-y-auto"
               >
-                <div className="flex-1 p-8 overflow-y-auto font-serif text-gray-800 select-none bg-white">
+                <div className="max-w-[680px] mx-auto py-8 px-6">
+                  {/* CV Header */}
+                  {cvData && (
+                    <div className="mb-8">
+                      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
+                        {decodeFilename(cvData.fileName).replace(/\.[^/.]+$/, '')}
+                      </h1>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {t('analyzed')} {new Date(cvData.uploadedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Timeline + Cards */}
                   {renderCVSections()}
                 </div>
               </motion.div>
