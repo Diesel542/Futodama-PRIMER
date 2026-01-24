@@ -23,8 +23,12 @@ export interface ActionDefinition {
   };
 }
 
-// Load JSON files
-const codexPath = path.join(__dirname);
+// Determine codex path based on environment
+// In production, files are at dist/codex/; in development, at server/codex/
+const isDev = process.env.NODE_ENV === 'development';
+const codexPath = isDev
+  ? path.join(process.cwd(), 'server', 'codex')
+  : path.join(process.cwd(), 'dist', 'codex');
 
 export const actions: Record<string, ActionDefinition> = JSON.parse(
   fs.readFileSync(path.join(codexPath, 'actions.json'), 'utf-8')
