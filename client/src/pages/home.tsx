@@ -273,29 +273,28 @@ export default function Home() {
   const getHighlightClass = (sectionId: string) => {
     if (state !== 'complete' || !observations.length) return '';
 
-    const relatedObservations = observations.filter(o => o.sectionId === sectionId);
+    const observation = observations.find(o => o.sectionId === sectionId);
 
-    if (relatedObservations.length === 0) {
-      return '';
+    if (!observation) return '';
+
+    if (observation.status === 'accepted') {
+      return 'bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400';
     }
 
-    const allResolved = relatedObservations.every(o => o.status !== 'pending');
-    const hasAccepted = relatedObservations.some(o => o.status === 'accepted');
-
-    if (allResolved && hasAccepted) {
-      return 'bg-green-50 border border-green-200 shadow-sm';
+    if (observation.status === 'declined' || observation.status === 'locked') {
+      return ''; // No highlight for declined or locked
     }
 
-    if (allResolved) {
-      return 'bg-gray-50 border border-gray-200';
-    }
-
-    return 'bg-amber-50 border border-amber-200 shadow-sm';
+    // Pending, awaiting_input, or processing
+    return 'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-400';
   };
 
-  // Helper to get pending observation for a section
+  // Helper to get pending observation for a section (now handles all active states)
   const getPendingObservation = (sectionId: string) => {
-    return observations.find(o => o.sectionId === sectionId && o.status === 'pending');
+    return observations.find(o =>
+      o.sectionId === sectionId &&
+      !['accepted', 'declined', 'locked'].includes(o.status)
+    );
   };
 
   const handleSectionClick = (sectionId: string, e: React.MouseEvent) => {
@@ -322,8 +321,206 @@ export default function Home() {
   }, []);
 
   const SuggestionPopover = ({ sectionId }: { sectionId: string }) => {
-    const observation = getPendingObservation(sectionId);
+    const observation = observations.find(o =>
+      o.sectionId === sectionId &&
+      !['accepted', 'declined', 'locked'].includes(o.status)
+    );
+    const [userInput, setUserInput] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+
     if (!observation) return null;
+
+    const handleSubmitInput = async () => {
+      if (!userInput.trim() || !cvData) return;
+
+      setIsProcessing(true);
+
+      // Find the section
+      const section = cvData.sections.find(s => s.id === observation.sectionId);
+      if (!section) {
+        setIsProcessing(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/cv/process-input', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Language': language,
+          },
+          body: JSON.stringify({
+            observationId: observation.id,
+            sectionId: observation.sectionId,
+            userInput: userInput.trim(),
+            section: section,
+          }),
+        });
+
+        if (!response.ok) throw new Error('Failed to process');
+
+        const data = await response.json();
+
+        // Update observation with generated content
+        setObservations(prev => prev.map(o =>
+          o.id === observation.id
+            ? { ...o, rewrittenContent: data.rewrittenContent, proposal: data.proposal }
+            : o
+        ));
+
+        setUserInput('');
+
+      } catch (error) {
+        console.error('Failed to process input:', error);
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    const handleApply = () => {
+      if (!observation.rewrittenContent || !cvData) return;
+
+      // Update the CV section content
+      setCvData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          sections: prev.sections.map(section =>
+            section.id === observation.sectionId
+              ? { ...section, content: observation.rewrittenContent! }
+              : section
+          ),
+        };
+      });
+
+      // Mark observation as accepted
+      setObservations(prev => prev.map(o =>
+        o.id === observation.id ? { ...o, status: 'accepted' as const } : o
+      ));
+
+      setActiveSection(null);
+    };
+
+    const handleLock = () => {
+      setObservations(prev => prev.map(o =>
+        o.id === observation.id ? { ...o, status: 'locked' as const } : o
+      ));
+      setActiveSection(null);
+    };
+
+    const handleDecline = () => {
+      setObservations(prev => prev.map(o =>
+        o.id === observation.id ? { ...o, status: 'declined' as const } : o
+      ));
+      setActiveSection(null);
+    };
+
+    // Render based on action type and state
+    const renderContent = () => {
+      // ADD_INFO: Needs user input first (and no rewrittenContent yet)
+      if (observation.actionType === 'add_info' && !observation.rewrittenContent) {
+        return (
+          <>
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex gap-3 items-start">
+                <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {observation.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 dark:bg-gray-900">
+              <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">
+                {observation.inputPrompt}
+              </label>
+              <textarea
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder={t('input.placeholder')}
+                className="w-full p-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                rows={3}
+                disabled={isProcessing}
+              />
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => setActiveSection(null)}
+                  className="flex-1 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                >
+                  {t('complete.back')}
+                </button>
+                <button
+                  onClick={handleSubmitInput}
+                  disabled={!userInput.trim() || isProcessing}
+                  className="flex-1 px-3 py-2 text-xs font-medium bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      {t('processing')}
+                    </>
+                  ) : (
+                    t('submit')
+                  )}
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      }
+
+      // REWRITE or ADD_INFO with generated content: Show preview
+      return (
+        <>
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex gap-3 items-start">
+              <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
+                {observation.message}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 bg-white dark:bg-gray-900">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                {t('complete.suggestedChange')}
+              </span>
+              <button
+                onClick={() => setActiveSection(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <span className="text-[10px]">{t('complete.back')}</span>
+              </button>
+            </div>
+
+            {/* Preview of new content */}
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg mb-3 max-h-40 overflow-y-auto">
+              <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                {observation.rewrittenContent}
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleLock}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors border border-gray-200 dark:border-gray-600"
+              >
+                <Lock className="w-3 h-3" />
+                {t('complete.lock')}
+              </button>
+              <button
+                onClick={handleApply}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                <Check className="w-3 h-3" />
+                {t('complete.apply')}
+              </button>
+            </div>
+          </div>
+        </>
+      );
+    };
 
     return (
       <motion.div
@@ -331,53 +528,10 @@ export default function Home() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10, scale: 0.95 }}
         data-suggestion-popover
-        className="absolute left-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden text-left"
+        className="absolute left-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden text-left"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex gap-3 items-start">
-           <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-           <p className="text-xs font-medium text-gray-700 leading-relaxed font-sans">
-             {observation.message}
-           </p>
-        </div>
-
-        <div className="p-4 bg-white">
-           <div className="flex justify-between items-center mb-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">SUGGESTED CHANGE</span>
-              <button onClick={() => setActiveSection(null)} className="text-gray-400 hover:text-gray-600">
-                <span className="text-[10px] font-sans">Back</span>
-              </button>
-           </div>
-
-           {observation.proposal && (
-             <div className="bg-amber-50/50 p-3 rounded text-xs text-gray-800 leading-relaxed mb-4 border border-amber-100/50 font-serif">
-               {observation.proposal}
-             </div>
-           )}
-
-           <div className="flex gap-2 justify-end pt-2">
-              <button
-                onClick={(e) => {
-                   handleAction(observation.id, "declined", e);
-                   setActiveSection(null);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors font-sans border border-gray-200"
-              >
-                <Lock className="w-3 h-3" />
-                Lock as is
-              </button>
-              <button
-                onClick={(e) => {
-                   handleAction(observation.id, "accepted", e);
-                   setActiveSection(null);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium text-white bg-[#4A6763] hover:bg-[#3d5552] rounded transition-colors shadow-sm font-sans"
-              >
-                <Check className="w-3 h-3" />
-                Apply Change
-              </button>
-           </div>
-        </div>
+        {renderContent()}
       </motion.div>
     );
   };

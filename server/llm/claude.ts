@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { CVSection } from '@shared/schema';
+import { loadPrompt } from '../codex';
 
 /**
  * CLAUDE LLM INTEGRATION
@@ -392,4 +394,74 @@ Write 2-3 sentences summarizing what this CV does well. Be specific and referenc
 
   // Split into array of sentences/paragraphs
   return text.text.trim().split(/\n\n+/).filter(s => s.length > 0);
+}
+
+// ============================================
+// CODEX-DRIVEN GENERATION
+// ============================================
+
+// Helper function for formatting duration
+function formatDuration(startDate?: string, endDate?: string): string {
+  if (!startDate) return 'N/A';
+  const start = startDate.substring(0, 7); // YYYY-MM
+  const end = endDate ? endDate.substring(0, 7) : 'Present';
+  return `${start} to ${end}`;
+}
+
+// Generate rewrite based on codex instruction
+export async function generateCodexRewrite(
+  section: CVSection,
+  instruction: string,
+  language: string = 'en'
+): Promise<string> {
+  const promptTemplate = loadPrompt('rewrite', language);
+
+  const prompt = promptTemplate
+    .replace('{{instruction}}', instruction)
+    .replace('{{content}}', section.content)
+    .replace('{{title}}', section.title)
+    .replace('{{organization}}', section.organization || 'N/A')
+    .replace('{{duration}}', formatDuration(section.startDate, section.endDate));
+
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = response.content[0];
+  if (text.type !== 'text') {
+    throw new Error('Unexpected response type');
+  }
+
+  return text.text.trim();
+}
+
+// Generate enhanced content from user input
+export async function generateFromUserInput(
+  section: CVSection,
+  userInput: string,
+  language: string = 'en'
+): Promise<string> {
+  const promptTemplate = loadPrompt('add-info', language);
+
+  const prompt = promptTemplate
+    .replace('{{content}}', section.content)
+    .replace('{{title}}', section.title)
+    .replace('{{organization}}', section.organization || 'N/A')
+    .replace('{{duration}}', formatDuration(section.startDate, section.endDate))
+    .replace('{{userInput}}', userInput);
+
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = response.content[0];
+  if (text.type !== 'text') {
+    throw new Error('Unexpected response type');
+  }
+
+  return text.text.trim();
 }

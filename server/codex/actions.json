@@ -1,0 +1,79 @@
+{
+  "sparse_density": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "What were your key accomplishments, responsibilities, and measurable outcomes in this role?",
+      "da": "Hvad var dine vigtigste resultater, ansvarsområder og målbare resultater i denne rolle?"
+    }
+  },
+  "light_density": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "Can you add more detail about your specific contributions and achievements?",
+      "da": "Kan du tilføje flere detaljer om dine specifikke bidrag og resultater?"
+    }
+  },
+  "outdated_experience": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "What recent experience or skills do you have that relate to or build upon this earlier work?",
+      "da": "Hvilken nyere erfaring eller kompetencer har du, der relaterer sig til eller bygger videre på dette tidligere arbejde?"
+    }
+  },
+  "stale_experience": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "How have you applied or developed these skills more recently?",
+      "da": "Hvordan har du anvendt eller udviklet disse kompetencer på det seneste?"
+    }
+  },
+  "missing_metrics": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "What measurable outcomes can you share? (e.g., percentages, team sizes, revenue, time saved)",
+      "da": "Hvilke målbare resultater kan du dele? (f.eks. procenter, teamstørrelser, omsætning, sparet tid)"
+    }
+  },
+  "missing_outcomes": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "What results or impact did you achieve in this role?",
+      "da": "Hvilke resultater eller effekt opnåede du i denne rolle?"
+    }
+  },
+  "missing_tools": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "What specific technologies, tools, or methodologies did you use?",
+      "da": "Hvilke specifikke teknologier, værktøjer eller metoder brugte du?"
+    }
+  },
+  "missing_team_context": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "How large was your team and what was your leadership scope?",
+      "da": "Hvor stort var dit team, og hvad var omfanget af dit lederskab?"
+    }
+  },
+  "dense_but_shallow": {
+    "actionType": "rewrite",
+    "rewriteInstruction": {
+      "en": "Restructure this dense content for better readability. Use bullet points for achievements. Preserve all facts.",
+      "da": "Omstrukturer dette tætte indhold for bedre læsbarhed. Brug punktopstillinger til resultater. Bevar alle fakta."
+    }
+  },
+  "recent_but_thin": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "This is recent work - what key achievements or responsibilities should be highlighted?",
+      "da": "Dette er nyligt arbejde - hvilke nøgleresultater eller ansvarsområder bør fremhæves?"
+    }
+  },
+  "large_gap": {
+    "actionType": "add_info",
+    "inputPrompt": {
+      "en": "What were you doing during this period? (e.g., education, freelance, personal projects, travel)",
+      "da": "Hvad lavede du i denne periode? (f.eks. uddannelse, freelance, personlige projekter, rejser)"
+    }
+  }
+}

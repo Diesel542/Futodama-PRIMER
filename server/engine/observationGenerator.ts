@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import { CVSection, Observation, ObservationType } from '@shared/schema';
+import { CVSection, Observation, ObservationType, ActionType } from '@shared/schema';
 import { CONFIDENCE_THRESHOLDS } from './thresholds';
+import { getActionForSignal } from '../codex';
 import { DensitySignal, analyzeDensityAll } from './analyzer_density';
 import { TemporalSignal, analyzeTemporalAll, detectGaps } from './analyzer_temporal';
 import { StructuralSignal, analyzeStructureAll } from './analyzer_structural';
@@ -104,7 +105,14 @@ export function generateObservations(sections: CVSection[]): RawObservation[] {
   return filtered.slice(0, 8);
 }
 
-export function createObservation(raw: RawObservation, message: string, proposal?: string): Observation {
+export function createObservation(
+  raw: RawObservation,
+  message: string,
+  proposal?: string,
+  actionType: ActionType = 'add_info',
+  inputPrompt?: string,
+  rewrittenContent?: string
+): Observation {
   return {
     id: `obs-${uuidv4().slice(0, 8)}`,
     sectionId: raw.sectionId,
@@ -113,6 +121,9 @@ export function createObservation(raw: RawObservation, message: string, proposal
     signal: raw.signal,
     message,
     proposal,
+    actionType,
+    inputPrompt,
+    rewrittenContent,
     status: 'pending',
   };
 }

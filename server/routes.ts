@@ -7,7 +7,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { cvStorage } from "./storage";
 import { parseWithLLM } from "./engine/llm-parser";
 import { generateObservations, createObservation, identifyStrengths } from "./engine/observationGenerator";
-import { phraseObservation, generateProposal, rewriteSection, phraseStrengths } from "./llm/claude";
+import { phraseObservation, generateProposal, rewriteSection, phraseStrengths, generateCodexRewrite, generateFromUserInput } from "./llm/claude";
+import { getActionForSignal } from './codex';
 import { PARSE_THRESHOLDS } from "./engine/thresholds";
 import {
   CV,
@@ -103,7 +104,7 @@ export async function registerRoutes(
       // Generate raw observations
       const rawObservations = generateObservations(parseResult.sections);
 
-      // Phrase observations using LLM
+      // Phrase observations using LLM and add action info
       const phrasedObservations = await Promise.all(
         rawObservations.map(async (raw) => {
           const observationContext = {
@@ -116,9 +117,26 @@ export async function registerRoutes(
             gapMonths: raw.context.gapMonths as number | undefined,
             completeness: raw.context.completeness as { hasMetrics: boolean; hasOutcomes: boolean; hasTools: boolean; hasTeamSize: boolean } | undefined,
           };
+
           const message = await phraseObservation(observationContext, language);
           const proposal = await generateProposal(raw.signal, (raw.context.sectionTitle as string) || 'Section', language);
-          return createObservation(raw, message, proposal);
+
+          // Get action from codex
+          const action = getActionForSignal(raw.signal);
+          const actionType = action?.actionType || 'add_info';
+          const inputPrompt = action?.inputPrompt?.[language as 'en' | 'da'] || action?.inputPrompt?.en;
+
+          // For rewrite actions, pre-generate the content
+          let rewrittenContent: string | undefined;
+          if (actionType === 'rewrite' && action?.rewriteInstruction) {
+            const section = parseResult.sections.find(s => s.id === raw.sectionId);
+            if (section) {
+              const instruction = action.rewriteInstruction[language as 'en' | 'da'] || action.rewriteInstruction.en;
+              rewrittenContent = await generateCodexRewrite(section, instruction, language);
+            }
+          }
+
+          return createObservation(raw, message, proposal, actionType, inputPrompt, rewrittenContent);
         })
       );
 
@@ -245,6 +263,43 @@ export async function registerRoutes(
       console.error("Error updating observation:", error);
       res.status(500).json({
         error: "Failed to update observation",
+        code: "ANALYSIS_FAILED"
+      } as ErrorResponse);
+    }
+  });
+
+  // ============================================
+  // POST /api/cv/process-input
+  // ============================================
+  app.post("/api/cv/process-input", async (req, res) => {
+    try {
+      const { observationId, sectionId, userInput, section } = req.body;
+      const language = (req.headers['x-language'] as string) || 'en';
+
+      if (!observationId || !sectionId || !userInput || !section) {
+        return res.status(400).json({
+          error: "Missing required fields",
+          code: "PARSE_FAILED"
+        } as ErrorResponse);
+      }
+
+      // Generate new content based on user input
+      const rewrittenContent = await generateFromUserInput(section, userInput, language);
+
+      const proposalText = language === 'da'
+        ? 'Foreslået forbedring baseret på dine oplysninger.'
+        : 'Suggested enhancement based on your input.';
+
+      res.json({
+        observationId,
+        rewrittenContent,
+        proposal: proposalText,
+      });
+
+    } catch (error) {
+      console.error("Process input error:", error);
+      res.status(500).json({
+        error: "Failed to process input",
         code: "ANALYSIS_FAILED"
       } as ErrorResponse);
     }
