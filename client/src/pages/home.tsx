@@ -582,7 +582,7 @@ export default function Home() {
           )}
         </header>
 
-        <div className="flex-1 relative flex flex-col">
+        <div className="flex-1 relative flex flex-col overflow-hidden">
           <AnimatePresence mode="wait">
             {state === "idle" ? (
               <motion.div
