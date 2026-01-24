@@ -322,7 +322,7 @@ export default function Home() {
         key={section.id}
         data-section-card
         className={cn(
-          "mb-6 p-4 rounded-lg transition-all duration-300",
+          "relative mb-6 p-4 rounded-lg transition-all duration-300",
           highlightClass,
           hasPending && "cursor-pointer hover:shadow-md",
           !highlightClass && "bg-white"
@@ -487,7 +487,7 @@ export default function Home() {
           )}
         </header>
 
-        <div className="flex-1 relative flex items-center justify-center">
+        <div className="flex-1 relative flex flex-col">
           <AnimatePresence mode="wait">
             {state === "idle" ? (
               <motion.div
