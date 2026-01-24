@@ -41,7 +41,7 @@
   /* Card backgrounds with temperature tints - Light Mode */
   --card-bg-neutral: #FFFFFF;
   --card-bg-pending: #FAF6E8;    /* ~15% yellow tint */
-  --card-bg-healthy: #F2F9F2;    /* ~15% green tint */
+  --card-bg-healthy: #E8F5E8;    /* increased green saturation */
 
   /* Temperature edge colors - Light Mode */
   --temp-edge-pending: #F4E8B3;
