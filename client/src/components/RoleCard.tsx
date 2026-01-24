@@ -89,15 +89,16 @@ export function RoleCard({
       <motion.div
         layout
         className={cn(
-          "bg-white dark:bg-gray-800 rounded-xl border transition-shadow duration-200",
+          "rounded-xl border transition-all duration-200",
           "shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]",
           "hover:shadow-[0_4px_6px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.04)]",
           "border-gray-200 dark:border-gray-700",
+          // Temperature-aware background + left edge
           isAccepted
-            ? "border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86]"
+            ? "bg-[#FAFDF9] dark:bg-[#1A1F1C] border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86]"
             : hasPendingSuggestion
-              ? "border-l-4 border-l-[#F4E8B3] dark:border-l-[#C9B56A]"
-              : ""
+              ? "bg-[#FDFBF3] dark:bg-[#1F1E1A] border-l-4 border-l-[#F4E8B3] dark:border-l-[#C9B56A]"
+              : "bg-white dark:bg-[#1A1D1F]"
         )}
       >
         {/* Card Header */}

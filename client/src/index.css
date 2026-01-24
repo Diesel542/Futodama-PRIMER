@@ -38,8 +38,14 @@
   --temp-healthy: #D7F1D6;        /* Muted clean green */
   --temp-healthy-subtle: #EDF7EE; /* Very light green tint */
 
-  /* Card backgrounds */
-  --card-bg: #FFFFFF;
+  /* Card backgrounds with temperature tints - Light Mode */
+  --card-bg-neutral: #FFFFFF;
+  --card-bg-pending: #FDFBF3;    /* 8% yellow tint */
+  --card-bg-healthy: #FAFDF9;    /* 8% green tint */
+
+  /* Temperature edge colors - Light Mode */
+  --temp-edge-pending: #F4E8B3;
+  --temp-edge-healthy: #D7F1D6;
 
   /* Spacing */
   --space-xs: 0.25rem;   /* 4px */
@@ -101,8 +107,14 @@
   --temp-healthy: #7BAF86;        /* Desaturated green for dark */
   --temp-healthy-subtle: #1A231C; /* Dark green tint */
 
-  /* Card backgrounds - slightly lifted for contrast */
-  --card-bg: #1A1D1F;             /* Not pure black, allows strip visibility */
+  /* Card backgrounds with temperature tints - Dark Mode */
+  --card-bg-neutral: #1A1D1F;
+  --card-bg-pending: #1F1E1A;    /* 6% yellow tint */
+  --card-bg-healthy: #1A1F1C;    /* 6% green tint */
+
+  /* Temperature edge colors - Dark Mode */
+  --temp-edge-pending: #C9B56A;
+  --temp-edge-healthy: #7BAF86;
 
   --color-background: hsl(220 13% 8%);
   --color-foreground: hsl(210 20% 98%);
