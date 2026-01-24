@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Check, ChevronRight, Sparkles, Loader2, Leaf, Lock, FileText } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useSettings } from "../contexts/SettingsContext";
 import { SettingsDropdown } from "../components/SettingsDropdown";
 import { RoleCard } from "../components/RoleCard";
+import { AnalysisPanel } from "../components/AnalysisPanel";
 import type { CV, Observation, AnalyzeResponse, CVSection } from "@shared/schema";
 
 /**
@@ -110,6 +111,20 @@ export default function Home() {
   const [cvData, setCvData] = useState<CV | null>(null);
   const [observations, setObservations] = useState<Observation[]>([]);
   const [strengths, setStrengths] = useState<string[]>([]);
+  const [totalIssues, setTotalIssues] = useState(0);
+
+  // Set total when analysis completes
+  useEffect(() => {
+    if (observations.length > 0 && totalIssues === 0) {
+      setTotalIssues(observations.length);
+    }
+  }, [observations, totalIssues]);
+
+  // Calculate resolved count
+  const resolvedIssues = useMemo(
+    () => observations.filter((o) => ['accepted', 'declined', 'locked'].includes(o.status)).length,
+    [observations]
+  );
 
   // PDF Viewer Component
   const PDFViewer = ({ url }: { url: string }) => {
@@ -622,146 +637,16 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="space-y-10"
+                className="h-full -m-12"
               >
-                {/* Header */}
-                <div className="flex items-center gap-3 pb-6 border-b border-gray-100 dark:border-gray-800">
-                  <Leaf className="w-6 h-6 text-[#6FC295]" strokeWidth={1.5} />
-                  <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100 tracking-tight">{t('complete.title')}</h1>
-                </div>
-
-                {/* Section 1: Strengths */}
-                <section>
-                  <motion.h2
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2"
-                  >
-                    <Check className="w-3.5 h-3.5 text-gray-400" />
-                    {t('complete.strengths')}
-                  </motion.h2>
-                  <div className="space-y-4">
-                    {strengths.map((paragraph, i) => (
-                      <motion.p
-                        key={i}
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 + (i * 0.1) }}
-                        className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed border-l-2 border-gray-100 dark:border-gray-700 pl-4"
-                      >
-                        {paragraph}
-                      </motion.p>
-                    ))}
-                  </div>
-                </section>
-
-                {/* Section 2: Observations/Suggestions */}
-                <section>
-                  <motion.h2
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-gray-400" />
-                    {t('complete.suggestions')}
-                  </motion.h2>
-
-                  {observations.filter(o => o.status !== 'declined').length === 0 ? (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.7 }}
-                      className="text-sm text-gray-500 dark:text-gray-400 italic"
-                    >
-                      {t('complete.noSuggestions')}
-                    </motion.p>
-                  ) : (
-                  <ul className="space-y-3">
-                    {observations.filter(o => o.status !== 'declined').map((observation, i) => {
-                      const isExpanded = expandedSuggestion === observation.id;
-                      const isHandled = observation.status !== 'pending';
-
-                      return (
-                        <motion.li
-                          key={observation.id}
-                          layout
-                          initial={{ opacity: 0, x: 10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.7 + (i * 0.1) }}
-                          onClick={() => !isHandled && handleSuggestionClick(observation.id)}
-                          className={cn(
-                            "text-sm relative pl-6 pr-4 py-3 rounded-md transition-all border",
-                            isHandled
-                              ? "bg-[#EDF7EE] dark:bg-[#1A231C] border-[#D7F1D6] dark:border-[#7BAF86] text-gray-800 dark:text-gray-200 cursor-default"
-                              : "bg-white dark:bg-gray-800 border-transparent hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute left-2 top-4 w-1.5 h-1.5 rounded-full",
-                            isHandled ? "bg-[#D7F1D6] dark:bg-[#7BAF86]" : "bg-[#F4E8B3] dark:bg-[#C9B56A]"
-                          )} />
-
-                          <div className="flex justify-between items-start gap-4">
-                            <span className={cn("text-gray-700 dark:text-gray-200", isHandled && "font-medium")}>
-                              {observation.message}
-                            </span>
-                            {isHandled && <Check className="w-4 h-4 text-[#D7F1D6] dark:text-[#7BAF86] mt-0.5" />}
-                          </div>
-
-                          <AnimatePresence>
-                            {isExpanded && !isHandled && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="pt-3 pb-1">
-                                  {observation.proposal && (
-                                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded text-xs font-mono text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-600 mb-3">
-                                      {observation.proposal}
-                                    </div>
-                                  )}
-                                  <div className="flex gap-2 justify-end">
-                                    <button
-                                      onClick={(e) => handleAction(observation.id, "declined", e)}
-                                      className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                                    >
-                                      Decline
-                                    </button>
-                                    <button
-                                      onClick={(e) => handleAction(observation.id, "accepted", e)}
-                                      className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 rounded transition-colors shadow-sm"
-                                    >
-                                      Accept Change
-                                    </button>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </motion.li>
-                      );
-                    })}
-                  </ul>
-                  )}
-                </section>
-
-                {/* CTA */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 2.0 }}
-                  className="pt-8 pb-12"
-                >
-                  <button className="group flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all px-6 py-3 rounded-md shadow-sm hover:shadow-md hover:-translate-y-0.5">
-                    {t('complete.roleAlignment')}
-                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                </motion.div>
-
+                <AnalysisPanel
+                  strengths={strengths.join('\n\n')}
+                  observations={observations}
+                  totalIssues={totalIssues}
+                  resolvedIssues={resolvedIssues}
+                  language={language}
+                  onObservationClick={handleSuggestionClick}
+                />
               </motion.div>
             )}
           </AnimatePresence>
