@@ -313,22 +313,26 @@ const STRENGTHS_SYSTEM_PROMPT_EN = `You are summarizing what a CV does well.
 CRITICAL CONSTRAINTS:
 - Focus ONLY on what is present and strong
 - Do NOT mention what's missing
-- 2-3 sentences maximum
+- Write 2-3 short paragraphs, each focusing on one strength
+- Separate paragraphs with double newlines
 - Be specific, reference actual content
+- Do NOT use bullet points
 - Sound confident but not effusive
 
-TONE: Like a senior reviewer noting genuine strengths.`;
+TONE: Like a senior reviewer noting genuine strengths. Write in a reflective, confident tone.`;
 
 const STRENGTHS_SYSTEM_PROMPT_DA = `Du opsummerer, hvad et CV gør godt.
 
 KRITISKE BEGRÆNSNINGER:
 - Fokuser KUN på det, der er til stede og stærkt
 - Nævn IKKE, hvad der mangler
-- Maksimalt 2-3 sætninger
+- Skriv 2-3 korte afsnit, hver fokuseret på en styrke
+- Adskil afsnit med dobbelte linjeskift
 - Vær specifik, referer til faktisk indhold
+- Brug IKKE punktopstilling
 - Lyd selvsikker, men ikke overstrømmende
 
-TONE: Som en senior anmelder, der bemærker ægte styrker.`;
+TONE: Som en senior anmelder, der bemærker ægte styrker. Skriv i en reflekterende, selvsikker tone.`;
 
 export async function phraseStrengths(
   signals: Array<{ signal: string; context: Record<string, unknown> }>,
