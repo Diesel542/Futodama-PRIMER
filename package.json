@@ -4,6 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "postinstall": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs client/public/",
     "dev:client": "vite dev --port 5000",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
