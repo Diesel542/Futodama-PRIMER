@@ -34,7 +34,8 @@ export interface CVSection {
 // ============================================
 
 export type ObservationType = 'density' | 'temporal' | 'structural';
-export type ObservationStatus = 'pending' | 'accepted' | 'declined' | 'locked';
+export type ActionType = 'rewrite' | 'add_info';
+export type ObservationStatus = 'pending' | 'awaiting_input' | 'processing' | 'accepted' | 'declined' | 'locked';
 
 export interface Observation {
   id: string;
@@ -43,7 +44,13 @@ export interface Observation {
   confidence: number;      // 0-1, internal only
   signal: string;          // internal code: "sparse_density"
   message: string;         // user-facing phrased observation
-  proposal?: string;       // suggested improvement text
+
+  // Action fields
+  actionType: ActionType;
+  inputPrompt?: string;       // Question to ask user (for add_info)
+  proposal?: string;          // Description of what will change
+  rewrittenContent?: string;  // The actual new content to apply
+
   status: ObservationStatus;
 }
 

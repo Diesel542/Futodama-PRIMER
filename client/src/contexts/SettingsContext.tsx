@@ -73,6 +73,11 @@ const translations: Record<Language, Record<string, string>> = {
     'error.docxPreview': 'DOCX preview not available',
     'error.clickAnalyze': 'Click "Analyze CV" to process',
     'error.noCvContent': 'No CV content to display',
+
+    // Input prompts
+    'input.placeholder': 'Enter your information...',
+    'processing': 'Processing...',
+    'submit': 'Submit',
   },
   da: {
     // Header
@@ -132,6 +137,11 @@ const translations: Record<Language, Record<string, string>> = {
     'error.docxPreview': 'DOCX-forhåndsvisning ikke tilgængelig',
     'error.clickAnalyze': 'Klik "Analysér CV" for at behandle',
     'error.noCvContent': 'Intet CV-indhold at vise',
+
+    // Input prompts
+    'input.placeholder': 'Indtast dine oplysninger...',
+    'processing': 'Behandler...',
+    'submit': 'Indsend',
   },
 };
 
