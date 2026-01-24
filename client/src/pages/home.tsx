@@ -694,20 +694,20 @@ export default function Home() {
                           className={cn(
                             "text-sm relative pl-6 pr-4 py-3 rounded-md transition-all border",
                             isHandled
-                              ? "bg-[var(--temp-healthy-subtle)] border-[var(--temp-healthy)] text-gray-800 dark:text-gray-200 cursor-default"
-                              : "bg-[var(--card-bg)] border-transparent hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm"
+                              ? "bg-[#EDF7EE] dark:bg-[#1A231C] border-[#D7F1D6] dark:border-[#7BAF86] text-gray-800 dark:text-gray-200 cursor-default"
+                              : "bg-white dark:bg-gray-800 border-transparent hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm"
                           )}
                         >
                           <div className={cn(
                             "absolute left-2 top-4 w-1.5 h-1.5 rounded-full",
-                            isHandled ? "bg-[var(--temp-healthy)]" : "bg-[var(--temp-warn)]"
+                            isHandled ? "bg-[#D7F1D6] dark:bg-[#7BAF86]" : "bg-[#F4E8B3] dark:bg-[#C9B56A]"
                           )} />
 
                           <div className="flex justify-between items-start gap-4">
                             <span className={cn("text-gray-700 dark:text-gray-200", isHandled && "font-medium")}>
                               {observation.message}
                             </span>
-                            {isHandled && <Check className="w-4 h-4 text-[var(--temp-healthy)] mt-0.5" />}
+                            {isHandled && <Check className="w-4 h-4 text-[#D7F1D6] dark:text-[#7BAF86] mt-0.5" />}
                           </div>
 
                           <AnimatePresence>

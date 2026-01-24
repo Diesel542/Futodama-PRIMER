@@ -76,11 +76,11 @@ export function RoleCard({
       {/* Timeline dot - temperature colors allowed here */}
       <div
         className={cn(
-          "absolute -left-8 top-6 w-3 h-3 rounded-full border-2 bg-[var(--card-bg)]",
+          "absolute -left-8 top-6 w-3 h-3 rounded-full border-2 bg-white dark:bg-gray-900",
           isAccepted
-            ? "border-[var(--temp-healthy)]"
+            ? "border-[#D7F1D6] dark:border-[#7BAF86]"
             : hasPendingSuggestion
-              ? "border-[var(--temp-warn)]"
+              ? "border-[#F4E8B3] dark:border-[#C9B56A]"
               : "border-gray-300 dark:border-gray-600"
         )}
       />
@@ -89,14 +89,14 @@ export function RoleCard({
       <motion.div
         layout
         className={cn(
-          "bg-[var(--card-bg)] rounded-xl border transition-shadow duration-200",
+          "bg-white dark:bg-gray-800 rounded-xl border transition-shadow duration-200",
           "shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]",
           "hover:shadow-[0_4px_6px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.04)]",
           "border-gray-200 dark:border-gray-700",
           isAccepted
-            ? "border-l-4 border-l-[var(--temp-healthy)]"
+            ? "border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86]"
             : hasPendingSuggestion
-              ? "border-l-4 border-l-[var(--temp-warn)]"
+              ? "border-l-4 border-l-[#F4E8B3] dark:border-l-[#C9B56A]"
               : ""
         )}
       >
@@ -226,7 +226,7 @@ export function RoleCard({
                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                       {t('complete.suggestedChange')}
                     </label>
-                    <div className="p-4 bg-[var(--card-bg)] border border-gray-200 dark:border-gray-700 border-l-4 border-l-[var(--temp-healthy)] rounded-lg">
+                    <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86] rounded-lg">
                       <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {observation.rewrittenContent}
                       </p>
