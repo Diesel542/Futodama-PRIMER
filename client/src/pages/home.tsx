@@ -862,8 +862,8 @@ export default function Home() {
                           className={cn(
                             "text-sm relative pl-6 pr-4 py-3 rounded-md transition-all border",
                             isHandled
-                              ? "bg-green-50 border-green-100 text-green-800 cursor-default"
-                              : "bg-white border-transparent hover:bg-gray-50 cursor-pointer hover:border-gray-200 hover:shadow-sm"
+                              ? "bg-green-50 dark:bg-green-900/30 border-green-100 dark:border-green-800 text-green-800 dark:text-green-200 cursor-default"
+                              : "bg-white dark:bg-gray-800 border-transparent hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-sm"
                           )}
                         >
                           <div className={cn(
@@ -872,10 +872,10 @@ export default function Home() {
                           )} />
 
                           <div className="flex justify-between items-start gap-4">
-                            <span className={cn(isHandled && "font-medium")}>
+                            <span className={cn("text-gray-700 dark:text-gray-200", isHandled && "font-medium")}>
                               {observation.message}
                             </span>
-                            {isHandled && <Check className="w-4 h-4 text-green-600 mt-0.5" />}
+                            {isHandled && <Check className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5" />}
                           </div>
 
                           <AnimatePresence>
@@ -888,20 +888,20 @@ export default function Home() {
                               >
                                 <div className="pt-3 pb-1">
                                   {observation.proposal && (
-                                    <div className="bg-gray-50 p-3 rounded text-xs font-mono text-gray-600 border border-gray-100 mb-3">
+                                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded text-xs font-mono text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-600 mb-3">
                                       {observation.proposal}
                                     </div>
                                   )}
                                   <div className="flex gap-2 justify-end">
                                     <button
                                       onClick={(e) => handleAction(observation.id, "declined", e)}
-                                      className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                                      className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                                     >
                                       Decline
                                     </button>
                                     <button
                                       onClick={(e) => handleAction(observation.id, "accepted", e)}
-                                      className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded transition-colors shadow-sm"
+                                      className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 rounded transition-colors shadow-sm"
                                     >
                                       Accept Change
                                     </button>
@@ -924,9 +924,9 @@ export default function Home() {
                   transition={{ delay: 2.0 }}
                   className="pt-8 pb-12"
                 >
-                  <button className="group flex items-center gap-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all px-6 py-3 rounded-md shadow-sm hover:shadow-md hover:-translate-y-0.5">
-                    Suggest role alignment draft
-                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-transform" />
+                  <button className="group flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all px-6 py-3 rounded-md shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                    {t('complete.roleAlignment')}
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 </motion.div>
 
