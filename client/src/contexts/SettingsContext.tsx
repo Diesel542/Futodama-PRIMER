@@ -67,6 +67,10 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Dates
     'date.present': 'Present',
+    'analyzed': 'Analyzed',
+
+    // Suggestion states
+    'suggestion.applied': 'Change applied',
 
     // Errors
     'error.failedToLoadPdf': 'Failed to load PDF',
@@ -131,6 +135,10 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Dates
     'date.present': 'Nu',
+    'analyzed': 'Analyseret',
+
+    // Suggestion states
+    'suggestion.applied': 'Ændring anvendt',
 
     // Errors
     'error.failedToLoadPdf': 'Kunne ikke indlæse PDF',
