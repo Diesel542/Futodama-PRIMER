@@ -218,7 +218,7 @@ export default function Home() {
         setTransitionPhase('peeling');
 
         // Animate scan progress (slower peel for dramatic effect)
-        const duration = 1600; // ms - doubled for smoother reveal
+        const duration = 2400; // ms - slow, dramatic reveal
         const startTime = Date.now();
 
         const animate = () => {
