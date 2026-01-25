@@ -217,8 +217,8 @@ export default function Home() {
         // Phase 2: Semantic Peel-Away
         setTransitionPhase('peeling');
 
-        // Animate scan progress
-        const duration = 800; // ms
+        // Animate scan progress (slower peel for dramatic effect)
+        const duration = 1600; // ms - doubled for smoother reveal
         const startTime = Date.now();
 
         const animate = () => {
@@ -269,10 +269,16 @@ export default function Home() {
     setAnalysisProgress(0);
     setScanProgress(0);
 
-    // Simulate analysis progress
+    // Simulate analysis progress with slower increments that feel natural
+    // Progress slows down as it approaches 90% to feel more realistic
     const progressInterval = setInterval(() => {
-      setAnalysisProgress(prev => Math.min(prev + Math.random() * 15, 90));
-    }, 200);
+      setAnalysisProgress(prev => {
+        if (prev < 30) return prev + Math.random() * 8 + 4; // Fast start
+        if (prev < 60) return prev + Math.random() * 5 + 2; // Medium pace
+        if (prev < 85) return prev + Math.random() * 2 + 0.5; // Slow crawl
+        return prev + Math.random() * 0.5; // Near-stop at 85-90
+      });
+    }, 150);
 
     const formData = new FormData();
     formData.append("file", pdfFile);
@@ -565,58 +571,31 @@ export default function Home() {
                   </div>
                 </div>
               </motion.div>
-            ) : state === "previewing" || state === "scanning" ? (
+            ) : state === "previewing" ? (
               <motion.div
                 key="preview"
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
                 className="flex-1 flex flex-col max-w-[750px] mx-auto w-full bg-white shadow-xl rounded-sm border border-gray-200 relative overflow-hidden"
               >
-                {/* PDF or Parsed Content */}
                 <div className="flex-1 p-6 overflow-y-auto">
-                  {state === "previewing" && pdfFile ? (
-                    pdfFile.type === "application/pdf" && pdfUrl ? (
-                      <PDFViewer url={pdfUrl} />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                        <FileText className="w-16 h-16 mb-4 text-gray-300" />
-                        <p className="text-sm font-medium">{pdfFile.name}</p>
-                        <p className="text-xs text-gray-400 mt-1">DOCX preview not available</p>
-                        <p className="text-xs text-gray-400">Click "Analyze CV" to process</p>
-                      </div>
-                    )
-                  ) : state === "scanning" && pdfFile?.type === "application/pdf" && pdfUrl ? (
+                  {pdfFile?.type === "application/pdf" && pdfUrl ? (
                     <PDFViewer url={pdfUrl} />
-                  ) : state === "scanning" ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                      <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-                      <p className="text-sm mt-4">Processing document...</p>
-                    </div>
                   ) : (
-                    renderCVSections()
+                    <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                      <FileText className="w-16 h-16 mb-4 text-gray-300" />
+                      <p className="text-sm font-medium">{pdfFile?.name}</p>
+                      <p className="text-xs text-gray-400 mt-1">DOCX preview not available</p>
+                      <p className="text-xs text-gray-400">Click "Analyze CV" to process</p>
+                    </div>
                   )}
                 </div>
-
-                {/* Scanning Overlay */}
-                {state === "scanning" && (
-                  <motion.div
-                    initial={{ top: "-10%" }}
-                    animate={{ top: "110%" }}
-                    transition={{
-                      duration: 3,
-                      ease: "linear",
-                      repeat: Infinity,
-                      repeatDelay: 0.5
-                    }}
-                    className="absolute left-0 right-0 h-2 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.2)] backdrop-blur-[1px] z-10"
-                  >
-                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-blue-500/50" />
-                  </motion.div>
-                )}
               </motion.div>
             ) : (
+              /* SCANNING and COMPLETE share the same key - no AnimatePresence flash */
               <div
-                key="complete"
+                key="analysis"
                 className="flex-1 overflow-hidden"
               >
                 <CVTransition
@@ -625,20 +604,43 @@ export default function Home() {
                   scanProgress={scanProgress}
                   pdfPreview={
                     pdfUrl && pdfFile?.type === "application/pdf" ? (
-                      <div className="h-full overflow-y-auto p-6 bg-white">
-                        <PDFViewer url={pdfUrl} />
+                      <div className="h-full overflow-y-auto bg-white relative">
+                        <div className="p-6">
+                          <PDFViewer url={pdfUrl} />
+                        </div>
+                        {/* Scanning Overlay - only during scanning state */}
+                        {state === "scanning" && (
+                          <motion.div
+                            initial={{ top: "-10%" }}
+                            animate={{ top: "110%" }}
+                            transition={{
+                              duration: 3,
+                              ease: "linear",
+                              repeat: Infinity,
+                              repeatDelay: 0.5
+                            }}
+                            className="absolute left-0 right-0 h-2 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.2)] backdrop-blur-[1px] z-10"
+                          >
+                            <div className="absolute top-0 left-0 right-0 h-[1px] bg-blue-500/50" />
+                          </motion.div>
+                        )}
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-white">
                         <FileText className="w-16 h-16 mb-4 text-gray-300" />
                         <p className="text-sm font-medium">{pdfFile?.name}</p>
+                        {state === "scanning" && (
+                          <>
+                            <Loader2 className="w-6 h-6 animate-spin text-gray-400 mt-4" />
+                            <p className="text-xs text-gray-400 mt-2">Processing...</p>
+                          </>
+                        )}
                       </div>
                     )
                   }
                   gardenerView={
                     <div className="h-full overflow-y-auto">
                       <div className="max-w-[680px] mx-auto py-8 px-6">
-                        {/* CV Header */}
                         {cvData && (
                           <div className="mb-8">
                             <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
@@ -649,8 +651,6 @@ export default function Home() {
                             </p>
                           </div>
                         )}
-
-                        {/* Timeline + Cards */}
                         {renderCVSections()}
                       </div>
                     </div>
@@ -731,45 +731,24 @@ export default function Home() {
                   </button>
                 </div>
               </motion.div>
-            ) : state === "scanning" ? (
-              <motion.div
-                key="scanning"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="h-full -m-12"
-              >
-                <AnalysisPanel
-                  strengths=""
-                  observations={[]}
-                  totalIssues={0}
-                  resolvedIssues={0}
-                  language={language}
-                  onSelectObservation={() => {}}
-                  transitionEnabled={semanticTransition}
-                  phase={transitionPhase}
-                  analysisProgress={analysisProgress}
-                />
-              </motion.div>
             ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
+              /* Both scanning and complete use the same key - no AnimatePresence flash */
+              <div
+                key="analysis"
                 className="h-full -m-12"
               >
                 <AnalysisPanel
-                  strengths={strengths.join('\n\n')}
-                  observations={observations}
-                  totalIssues={totalIssues}
-                  resolvedIssues={resolvedIssues}
+                  strengths={state === 'complete' ? strengths.join('\n\n') : ''}
+                  observations={state === 'complete' ? observations : []}
+                  totalIssues={state === 'complete' ? totalIssues : 0}
+                  resolvedIssues={state === 'complete' ? resolvedIssues : 0}
                   language={language}
-                  onSelectObservation={handleSelectObservation}
+                  onSelectObservation={state === 'complete' ? handleSelectObservation : () => {}}
                   transitionEnabled={semanticTransition}
                   phase={transitionPhase}
                   analysisProgress={analysisProgress}
                 />
-              </motion.div>
+              </div>
             )}
           </AnimatePresence>
         </div>
