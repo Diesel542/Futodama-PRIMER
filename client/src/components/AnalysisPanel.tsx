@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Leaf, Check, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Observation } from '@shared/schema';
+import type { TransitionPhase } from './CVTransition';
 
 interface AnalysisPanelProps {
   strengths: string;
@@ -11,6 +12,116 @@ interface AnalysisPanelProps {
   resolvedIssues: number;
   language: 'en' | 'da';
   onSelectObservation: (sectionId: string) => void;
+  transitionEnabled?: boolean;
+  phase?: TransitionPhase;
+  analysisProgress?: number;
+}
+
+// HealthBar component for phase-aware progress/health display
+interface HealthBarProps {
+  enabled: boolean;
+  phase: TransitionPhase;
+  analysisProgress: number;
+  healthProgress: number;
+  language: 'en' | 'da';
+}
+
+function HealthBar({
+  enabled,
+  phase,
+  analysisProgress,
+  healthProgress,
+  language
+}: HealthBarProps) {
+  const isAnalyzing = phase === 'idle' || phase === 'analyzing' || phase === 'pause';
+  const showHealthLabels = !isAnalyzing;
+  const skipMorph = !enabled && phase === 'complete';
+
+  const t = {
+    en: {
+      analyzing: 'Analyzing CV...',
+      complete: 'Analysis complete',
+      start: 'Start',
+      now: 'Now',
+      goal: 'Goal',
+    },
+    da: {
+      analyzing: 'Analyserer CV...',
+      complete: 'Analyse færdig',
+      start: 'Start',
+      now: 'Nu',
+      goal: 'Mål',
+    }
+  }[language];
+
+  return (
+    <div className="space-y-2">
+      {/* Label */}
+      <motion.div
+        className="flex items-center gap-2"
+        key={isAnalyzing ? 'analyzing' : 'complete'}
+        initial={skipMorph ? false : { opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <Leaf className="w-5 h-5 text-green-600 dark:text-green-500" />
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          {isAnalyzing ? t.analyzing : t.complete}
+        </h1>
+      </motion.div>
+
+      {/* Bar */}
+      <div className="relative pt-2">
+        <div className={cn(
+          "h-2 rounded-full overflow-hidden transition-all",
+          skipMorph ? "" : "duration-300",
+          isAnalyzing
+            ? "bg-gray-200 dark:bg-gray-700"
+            : "bg-gradient-to-r from-[#F4E8B3] via-[#D4E4A6] to-[#7BAF86]"
+        )}>
+          {/* Progress fill (during analysis) */}
+          {isAnalyzing && (
+            <motion.div
+              className="h-full bg-green-500 dark:bg-green-600 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${analysisProgress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          )}
+        </div>
+
+        {/* Now marker (after analysis) */}
+        {!isAnalyzing && (
+          <motion.div
+            className="absolute top-1/2 mt-1 -translate-y-1/2 w-3 h-3 rounded-full bg-white dark:bg-gray-200 border-2 border-gray-400 dark:border-gray-500 shadow-sm"
+            initial={skipMorph ? { left: `${healthProgress * 100}%`, marginLeft: '-6px' } : { left: '0%', opacity: 0 }}
+            animate={{
+              left: `${healthProgress * 100}%`,
+              opacity: 1,
+              marginLeft: '-6px',
+            }}
+            transition={{ duration: skipMorph ? 0 : 0.3, ease: 'easeOut' }}
+          />
+        )}
+      </div>
+
+      {/* Axis labels */}
+      <AnimatePresence>
+        {showHealthLabels && (
+          <motion.div
+            className="flex justify-between text-xs text-gray-500 dark:text-gray-400"
+            initial={skipMorph ? { opacity: 1 } : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: skipMorph ? 0 : 0.1 }}
+          >
+            <span>{t.start}</span>
+            <span>{t.now}</span>
+            <span>{t.goal}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 interface ImprovementCardProps {
@@ -73,6 +184,9 @@ export function AnalysisPanel({
   resolvedIssues,
   language,
   onSelectObservation,
+  transitionEnabled = false,
+  phase = 'complete',
+  analysisProgress = 0,
 }: AnalysisPanelProps) {
   // Filter to pending observations only, max 3
   const pendingObservations = useMemo(
@@ -135,118 +249,117 @@ export function AnalysisPanel({
     attention: t.attention,
   }[healthState];
 
+  const showContent = phase === 'complete';
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-6 space-y-8">
-        {/* ========== STATUS HEADER ========== */}
+        {/* ========== STATUS HEADER + HEALTH BAR ========== */}
         <section className="space-y-4">
-          {/* Title */}
-          <div className="flex items-center gap-2">
-            <Leaf className="w-5 h-5 text-green-600 dark:text-green-500" />
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {t.analysisComplete}
-            </h1>
-          </div>
+          <HealthBar
+            enabled={transitionEnabled}
+            phase={phase}
+            analysisProgress={analysisProgress}
+            healthProgress={healthProgress}
+            language={language}
+          />
 
-          {/* Health Badge */}
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium',
-                healthState === 'healthy'
-                  ? 'bg-[#E8F5E8] dark:bg-[#1A2F1C] text-green-700 dark:text-green-400'
-                  : healthState === 'improving'
-                    ? 'bg-[#E8F5E8] dark:bg-[#1A2F1C] text-green-700 dark:text-green-400'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-              )}
-            >
-              <span
-                className={cn(
-                  'w-2 h-2 rounded-full',
-                  healthState === 'attention' ? 'bg-[#C9B56A]' : 'bg-green-500 dark:bg-green-400'
-                )}
-              />
-              {healthBadgeText}
-            </span>
-          </div>
-
-          {/* Health Trajectory Bar */}
-          <div className="pt-2">
-            <div className="relative">
-              {/* Track */}
-              <div className="h-2 rounded-full bg-gradient-to-r from-[#F4E8B3] via-[#D4E4A6] to-[#7BAF86]" />
-
-              {/* Now Marker */}
+          {/* Health Badge - only show when complete */}
+          <AnimatePresence>
+            {showContent && (
               <motion.div
-                className="absolute top-1/2 -translate-y-1/2"
-                initial={false}
-                animate={{ left: `${Math.min(healthProgress * 100, 100)}%` }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                style={{ marginLeft: '-6px' }}
+                className="flex items-center gap-2"
+                initial={transitionEnabled ? { opacity: 0, y: 5 } : { opacity: 1, y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: transitionEnabled ? 0.1 : 0 }}
               >
-                <div className="w-3 h-3 rounded-full bg-white dark:bg-gray-200 border-2 border-gray-400 dark:border-gray-500 shadow-sm" />
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium',
+                    healthState === 'healthy'
+                      ? 'bg-[#E8F5E8] dark:bg-[#1A2F1C] text-green-700 dark:text-green-400'
+                      : healthState === 'improving'
+                        ? 'bg-[#E8F5E8] dark:bg-[#1A2F1C] text-green-700 dark:text-green-400'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'w-2 h-2 rounded-full',
+                      healthState === 'attention' ? 'bg-[#C9B56A]' : 'bg-green-500 dark:bg-green-400'
+                    )}
+                  />
+                  {healthBadgeText}
+                </span>
               </motion.div>
-            </div>
-
-            {/* Labels */}
-            <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-              <span>{t.start}</span>
-              <span>{t.now}</span>
-              <span>{t.goal}</span>
-            </div>
-          </div>
+            )}
+          </AnimatePresence>
         </section>
 
         {/* ========== WHAT'S WORKING WELL ========== */}
-        {strengths && (
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t.whatsWorking}
-              </h2>
-            </div>
+        <AnimatePresence>
+          {showContent && strengths && (
+            <motion.section
+              className="space-y-3"
+              initial={transitionEnabled ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: transitionEnabled ? 0.2 : 0 }}
+            >
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t.whatsWorking}
+                </h2>
+              </div>
 
-            {/* Narrative prose - split into paragraphs */}
-            <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400 leading-relaxed italic">
-              {strengths.split('\n\n').map((paragraph, i) => (
-                <p key={i}>{paragraph}</p>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ========== PRIORITIZED IMPROVEMENTS ========== */}
-        {pendingObservations.length > 0 && (
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 dark:text-gray-500">&#10023;</span>
-              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t.improvements}
-              </h2>
-            </div>
-
-            {/* Improvement Cards */}
-            <AnimatePresence mode="popLayout">
-              <div className="space-y-3">
-                {pendingObservations.map((obs) => (
-                  <ImprovementCard
-                    key={obs.id}
-                    observation={obs}
-                    onClick={() => onSelectObservation(obs.sectionId)}
-                  />
+              {/* Narrative prose - split into paragraphs */}
+              <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400 leading-relaxed italic">
+                {strengths.split('\n\n').map((paragraph, i) => (
+                  <p key={i}>{paragraph}</p>
                 ))}
               </div>
-            </AnimatePresence>
+            </motion.section>
+          )}
+        </AnimatePresence>
 
-            {/* Collapsed count */}
-            {totalPending > 3 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 pl-1">
-                +{totalPending - 3} {t.moreItems}
-              </p>
-            )}
-          </section>
-        )}
+        {/* ========== PRIORITIZED IMPROVEMENTS ========== */}
+        <AnimatePresence>
+          {showContent && pendingObservations.length > 0 && (
+            <motion.section
+              className="space-y-3"
+              initial={transitionEnabled ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: transitionEnabled ? 0.4 : 0 }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 dark:text-gray-500">&#10023;</span>
+                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t.improvements}
+                </h2>
+              </div>
+
+              {/* Improvement Cards */}
+              <AnimatePresence mode="popLayout">
+                <div className="space-y-3">
+                  {pendingObservations.map((obs) => (
+                    <ImprovementCard
+                      key={obs.id}
+                      observation={obs}
+                      onClick={() => onSelectObservation(obs.sectionId)}
+                    />
+                  ))}
+                </div>
+              </AnimatePresence>
+
+              {/* Collapsed count */}
+              {totalPending > 3 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 pl-1">
+                  +{totalPending - 3} {t.moreItems}
+                </p>
+              )}
+            </motion.section>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

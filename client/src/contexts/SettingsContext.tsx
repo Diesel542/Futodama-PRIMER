@@ -8,6 +8,8 @@ interface SettingsContextType {
   setLanguage: (lang: Language) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  semanticTransition: boolean;
+  setSemanticTransition: (enabled: boolean) => void;
   t: (key: string) => string;
 }
 
@@ -60,6 +62,7 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.title': 'Settings',
     'settings.language': 'Language',
     'settings.theme': 'Theme',
+    'settings.transition': 'Semantic transition',
     'settings.english': 'English',
     'settings.danish': 'Danish',
     'settings.light': 'Light',
@@ -128,6 +131,7 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.title': 'Indstillinger',
     'settings.language': 'Sprog',
     'settings.theme': 'Tema',
+    'settings.transition': 'Semantisk overgang',
     'settings.english': 'Engelsk',
     'settings.danish': 'Dansk',
     'settings.light': 'Lyst',
@@ -168,6 +172,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return 'light';
   });
 
+  const [semanticTransition, setSemanticTransitionState] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('cv-health-semantic-transition') === 'true';
+    }
+    return false; // Default OFF for safe rollout
+  });
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('cv-health-language', lang);
@@ -176,6 +187,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem('cv-health-theme', newTheme);
+  };
+
+  const setSemanticTransition = (enabled: boolean) => {
+    setSemanticTransitionState(enabled);
+    localStorage.setItem('cv-health-semantic-transition', String(enabled));
   };
 
   // Apply theme class to document
@@ -192,7 +208,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SettingsContext.Provider value={{ language, setLanguage, theme, setTheme, t }}>
+    <SettingsContext.Provider value={{ language, setLanguage, theme, setTheme, semanticTransition, setSemanticTransition, t }}>
       {children}
     </SettingsContext.Provider>
   );
