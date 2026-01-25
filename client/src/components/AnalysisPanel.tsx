@@ -178,6 +178,38 @@ function ImprovementCard({ observation, onClick }: ImprovementCardProps) {
   );
 }
 
+// CompletedCard component for resolved observations
+function CompletedCard({ observation }: { observation: Observation }) {
+  // Extract headline from observation
+  const [headline] = observation.message.split('. ');
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className={cn(
+        "p-3 rounded-xl",
+        "bg-[#E8F5E8] dark:bg-[#1A2F1C]",
+        "border border-green-200 dark:border-green-800",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        {/* Green checkmark */}
+        <div className="w-5 h-5 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center shrink-0">
+          <Check className="w-3 h-3 text-white" />
+        </div>
+
+        {/* Headline */}
+        <p className="text-sm text-green-800 dark:text-green-300 line-clamp-1">
+          {headline}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 export function AnalysisPanel({
   strengths,
   observations,
@@ -201,6 +233,12 @@ export function AnalysisPanel({
   // Total pending count (for "+N more" display)
   const totalPending = useMemo(
     () => observations.filter((o) => !['accepted', 'declined', 'locked'].includes(o.status)).length,
+    [observations]
+  );
+
+  // Filter to completed (accepted) observations
+  const completedObservations = useMemo(
+    () => observations.filter((o) => o.status === 'accepted'),
     [observations]
   );
 
@@ -228,6 +266,7 @@ export function AnalysisPanel({
       goal: 'Goal',
       whatsWorking: "What's working well",
       improvements: 'Prioritized improvements',
+      completed: 'Completed',
       moreItems: 'more items',
     },
     da: {
@@ -240,6 +279,7 @@ export function AnalysisPanel({
       goal: 'Mal',
       whatsWorking: 'Hvad der fungerer godt',
       improvements: 'Prioriterede forbedringer',
+      completed: 'Gennemført',
       moreItems: 'flere punkter',
     },
   }[language];
@@ -378,6 +418,32 @@ export function AnalysisPanel({
                   +{totalPending - 3} {t.moreItems}
                 </p>
               )}
+            </motion.section>
+          )}
+        </AnimatePresence>
+
+        {/* ========== COMPLETED IMPROVEMENTS ========== */}
+        <AnimatePresence>
+          {showContent && completedObservations.length > 0 && (
+            <motion.section
+              className="space-y-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-500 dark:text-green-400" />
+                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t.completed}
+                </h2>
+              </div>
+
+              {/* Completed Cards */}
+              <div className="space-y-2">
+                {completedObservations.map((obs) => (
+                  <CompletedCard key={obs.id} observation={obs} />
+                ))}
+              </div>
             </motion.section>
           )}
         </AnimatePresence>
