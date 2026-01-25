@@ -98,6 +98,60 @@ const formatDateRange = (start?: string, end?: string): string => {
   return `${startFormatted} — ${formatDate(end)}`;
 };
 
+// PDF Viewer Component - MOVED OUTSIDE Home to prevent remounts
+const PDFViewer = ({ url }: { url: string }) => {
+  const [numPages, setNumPages] = useState<number>(0);
+  const [containerWidth, setContainerWidth] = useState<number>(600);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const updateWidth = () => {
+        if (containerRef.current) {
+          setContainerWidth(containerRef.current.clientWidth - 48);
+        }
+      };
+      updateWidth();
+      window.addEventListener('resize', updateWidth);
+      return () => window.removeEventListener('resize', updateWidth);
+    }
+  }, []);
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+  };
+
+  return (
+    <div ref={containerRef} className="w-full">
+      <Document
+        file={url}
+        onLoadSuccess={onDocumentLoadSuccess}
+        loading={
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          </div>
+        }
+        error={
+          <div className="flex items-center justify-center h-64 text-red-500">
+            Failed to load PDF
+          </div>
+        }
+      >
+        {Array.from(new Array(numPages), (_, index) => (
+          <Page
+            key={`page_${index + 1}`}
+            pageNumber={index + 1}
+            width={containerWidth}
+            className="mb-4 shadow-sm"
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+          />
+        ))}
+      </Document>
+    </div>
+  );
+};
+
 export default function Home() {
   const { t, language, semanticTransition } = useSettings();
   const [state, setState] = useState<AppState>("idle");
@@ -189,60 +243,6 @@ export default function Home() {
     }, 400); // Pause duration
 
   }, [semanticTransition]);
-
-  // PDF Viewer Component
-  const PDFViewer = ({ url }: { url: string }) => {
-    const [numPages, setNumPages] = useState<number>(0);
-    const [containerWidth, setContainerWidth] = useState<number>(600);
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-      if (containerRef.current) {
-        const updateWidth = () => {
-          if (containerRef.current) {
-            setContainerWidth(containerRef.current.clientWidth - 48); // Account for padding
-          }
-        };
-        updateWidth();
-        window.addEventListener('resize', updateWidth);
-        return () => window.removeEventListener('resize', updateWidth);
-      }
-    }, []);
-
-    const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-      setNumPages(numPages);
-    };
-
-    return (
-      <div ref={containerRef} className="w-full">
-        <Document
-          file={url}
-          onLoadSuccess={onDocumentLoadSuccess}
-          loading={
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-            </div>
-          }
-          error={
-            <div className="flex items-center justify-center h-64 text-red-500">
-              Failed to load PDF
-            </div>
-          }
-        >
-          {Array.from(new Array(numPages), (_, index) => (
-            <Page
-              key={`page_${index + 1}`}
-              pageNumber={index + 1}
-              width={containerWidth}
-              className="mb-4 shadow-sm"
-              renderTextLayer={false}
-              renderAnnotationLayer={false}
-            />
-          ))}
-        </Document>
-      </div>
-    );
-  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -615,10 +615,8 @@ export default function Home() {
                 )}
               </motion.div>
             ) : (
-              <motion.div
+              <div
                 key="complete"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
                 className="flex-1 overflow-hidden"
               >
                 <CVTransition
@@ -658,7 +656,7 @@ export default function Home() {
                     </div>
                   }
                 />
-              </motion.div>
+              </div>
             )}
           </AnimatePresence>
         </div>
@@ -739,24 +737,19 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="space-y-12 pt-8"
+                className="h-full -m-12"
               >
-                 <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-6">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {t('scanning.title')}
-                    </div>
-                    {/* Skeletons */}
-                    {[1, 2, 3].map((i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.2 }}
-                        className="h-24 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700"
-                      />
-                    ))}
-                 </div>
+                <AnalysisPanel
+                  strengths=""
+                  observations={[]}
+                  totalIssues={0}
+                  resolvedIssues={0}
+                  language={language}
+                  onSelectObservation={() => {}}
+                  transitionEnabled={semanticTransition}
+                  phase={transitionPhase}
+                  analysisProgress={analysisProgress}
+                />
               </motion.div>
             ) : (
               <motion.div
