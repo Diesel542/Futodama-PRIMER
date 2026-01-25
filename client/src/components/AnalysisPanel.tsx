@@ -253,7 +253,7 @@ export function AnalysisPanel({
   const showContent = phase === 'complete';
 
   return (
-    <div className="h-full overflow-y-auto relative">
+    <div className="h-full overflow-y-auto">
       <div className="p-6 space-y-8">
         {/* ========== STATUS HEADER + HEALTH BAR ========== */}
         <section className="space-y-4">
@@ -301,7 +301,7 @@ export function AnalysisPanel({
 
           {/* Code Scroll - only show during analysis, centered vertically */}
           {!showContent && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="flex items-center justify-center h-[70vh]">
               <CodeScroll />
             </div>
           )}
