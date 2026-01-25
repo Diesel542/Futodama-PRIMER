@@ -174,7 +174,7 @@ export function AnalysisPanel({
           <div className="pt-2">
             <div className="relative">
               {/* Track */}
-              <div className="h-2 rounded-full bg-gradient-to-r from-[#F4E8B3] via-[#D4E4A6] to-[#7BAF86] dark:from-[#4A4535] dark:via-[#3A4A35] dark:to-[#2A3F2E]" />
+              <div className="h-2 rounded-full bg-gradient-to-r from-[#F4E8B3] via-[#D4E4A6] to-[#7BAF86]" />
 
               {/* Now Marker */}
               <motion.div
