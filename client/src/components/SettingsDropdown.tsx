@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 export function SettingsDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const { language, setLanguage, theme, setTheme, t } = useSettings();
+  const { language, setLanguage, theme, setTheme, semanticTransition, setSemanticTransition, t } = useSettings();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside
@@ -87,7 +87,7 @@ export function SettingsDropdown() {
             </div>
 
             {/* Theme Setting */}
-            <div className="p-3">
+            <div className="p-3 border-b border-gray-100 dark:border-gray-800">
               <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                 {t('settings.theme')}
               </label>
@@ -115,6 +115,31 @@ export function SettingsDropdown() {
                 >
                   {theme === 'dark' && <Check className="w-3 h-3" />}
                   {t('settings.dark')}
+                </button>
+              </div>
+            </div>
+
+            {/* Semantic Transition Toggle */}
+            <div className="p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {t('settings.transition')}
+                </span>
+                <button
+                  onClick={() => setSemanticTransition(!semanticTransition)}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                    semanticTransition
+                      ? "bg-green-500"
+                      : "bg-gray-300 dark:bg-gray-600"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                      semanticTransition ? "translate-x-4" : "translate-x-0.5"
+                    )}
+                  />
                 </button>
               </div>
             </div>

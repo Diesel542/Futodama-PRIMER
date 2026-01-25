@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Check, ChevronRight, Sparkles, Loader2, Leaf, Lock, FileText } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -10,6 +10,7 @@ import { useSettings } from "../contexts/SettingsContext";
 import { SettingsDropdown } from "../components/SettingsDropdown";
 import { RoleCard } from "../components/RoleCard";
 import { AnalysisPanel } from "../components/AnalysisPanel";
+import { CVTransition, type TransitionPhase } from "../components/CVTransition";
 import type { CV, Observation, AnalyzeResponse, CVSection } from "@shared/schema";
 
 /**
@@ -98,7 +99,7 @@ const formatDateRange = (start?: string, end?: string): string => {
 };
 
 export default function Home() {
-  const { t, language } = useSettings();
+  const { t, language, semanticTransition } = useSettings();
   const [state, setState] = useState<AppState>("idle");
   const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -113,6 +114,11 @@ export default function Home() {
   const [strengths, setStrengths] = useState<string[]>([]);
   const [totalIssues, setTotalIssues] = useState(0);
 
+  // Transition state
+  const [transitionPhase, setTransitionPhase] = useState<TransitionPhase>('idle');
+  const [scanProgress, setScanProgress] = useState(0);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+
   // Set total when analysis completes
   useEffect(() => {
     if (observations.length > 0 && totalIssues === 0) {
@@ -120,11 +126,69 @@ export default function Home() {
     }
   }, [observations, totalIssues]);
 
+  // Clean up PDF URL after transition completes (when semantic transition is enabled)
+  useEffect(() => {
+    if (transitionPhase === 'complete' && pdfUrl && semanticTransition) {
+      // Delay cleanup slightly to ensure transition is visually complete
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(pdfUrl);
+        setPdfUrl(null);
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [transitionPhase, pdfUrl, semanticTransition]);
+
   // Calculate resolved count
   const resolvedIssues = useMemo(
     () => observations.filter((o) => ['accepted', 'declined', 'locked'].includes(o.status)).length,
     [observations]
   );
+
+  // Transition orchestrator
+  const startTransition = useCallback(() => {
+    // If toggle is OFF, skip to complete immediately
+    if (!semanticTransition) {
+      setTransitionPhase('complete');
+      return;
+    }
+
+    // Phase 0: Pause (let brain register completion)
+    setTransitionPhase('pause');
+
+    setTimeout(() => {
+      // Phase 1: Progress → Health Morph
+      setTransitionPhase('morphing');
+
+      setTimeout(() => {
+        // Phase 2: Semantic Peel-Away
+        setTransitionPhase('peeling');
+
+        // Animate scan progress
+        const duration = 800; // ms
+        const startTime = Date.now();
+
+        const animate = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min((elapsed / duration) * 100, 100);
+          setScanProgress(progress);
+
+          if (progress < 100) {
+            requestAnimationFrame(animate);
+          } else {
+            // Phase 3: Complete
+            setTimeout(() => {
+              setTransitionPhase('complete');
+            }, 100);
+          }
+        };
+
+        requestAnimationFrame(animate);
+
+      }, 300); // Morph duration
+
+    }, 400); // Pause duration
+
+  }, [semanticTransition]);
 
   // PDF Viewer Component
   const PDFViewer = ({ url }: { url: string }) => {
@@ -201,6 +265,14 @@ export default function Home() {
     if (!pdfFile) return;
 
     setState("scanning");
+    setTransitionPhase('analyzing');
+    setAnalysisProgress(0);
+    setScanProgress(0);
+
+    // Simulate analysis progress
+    const progressInterval = setInterval(() => {
+      setAnalysisProgress(prev => Math.min(prev + Math.random() * 15, 90));
+    }, 200);
 
     const formData = new FormData();
     formData.append("file", pdfFile);
@@ -214,6 +286,9 @@ export default function Home() {
         body: formData,
       });
 
+      clearInterval(progressInterval);
+      setAnalysisProgress(100);
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "Analysis failed");
@@ -226,15 +301,20 @@ export default function Home() {
       setStrengths(data.strengths);
       setState("complete");
 
-      // Clean up the PDF URL
-      if (pdfUrl) {
+      // Start the transition sequence
+      startTransition();
+
+      // Clean up the PDF URL after transition (keep it for the peel effect)
+      if (!semanticTransition && pdfUrl) {
         URL.revokeObjectURL(pdfUrl);
         setPdfUrl(null);
       }
 
     } catch (error) {
+      clearInterval(progressInterval);
       setUploadError(error instanceof Error ? error.message : "Analysis failed");
       setState("previewing"); // Go back to preview, not idle
+      setTransitionPhase('idle');
     }
   };
 
@@ -248,6 +328,9 @@ export default function Home() {
     setObservations([]);
     setStrengths([]);
     setState("idle");
+    setTransitionPhase('idle');
+    setScanProgress(0);
+    setAnalysisProgress(0);
   };
 
   const handleUpload = () => {
@@ -536,24 +619,45 @@ export default function Home() {
                 key="complete"
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex-1 overflow-y-auto"
+                className="flex-1 overflow-hidden"
               >
-                <div className="max-w-[680px] mx-auto py-8 px-6">
-                  {/* CV Header */}
-                  {cvData && (
-                    <div className="mb-8">
-                      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
-                        {decodeFilename(cvData.fileName).replace(/\.[^/.]+$/, '')}
-                      </h1>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {t('analyzed')} {new Date(cvData.uploadedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
+                <CVTransition
+                  enabled={semanticTransition}
+                  phase={transitionPhase}
+                  scanProgress={scanProgress}
+                  pdfPreview={
+                    pdfUrl && pdfFile?.type === "application/pdf" ? (
+                      <div className="h-full overflow-y-auto p-6 bg-white">
+                        <PDFViewer url={pdfUrl} />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-white">
+                        <FileText className="w-16 h-16 mb-4 text-gray-300" />
+                        <p className="text-sm font-medium">{pdfFile?.name}</p>
+                      </div>
+                    )
+                  }
+                  gardenerView={
+                    <div className="h-full overflow-y-auto">
+                      <div className="max-w-[680px] mx-auto py-8 px-6">
+                        {/* CV Header */}
+                        {cvData && (
+                          <div className="mb-8">
+                            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
+                              {decodeFilename(cvData.fileName).replace(/\.[^/.]+$/, '')}
+                            </h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              {t('analyzed')} {new Date(cvData.uploadedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
 
-                  {/* Timeline + Cards */}
-                  {renderCVSections()}
-                </div>
+                        {/* Timeline + Cards */}
+                        {renderCVSections()}
+                      </div>
+                    </div>
+                  }
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -668,6 +772,9 @@ export default function Home() {
                   resolvedIssues={resolvedIssues}
                   language={language}
                   onSelectObservation={handleSelectObservation}
+                  transitionEnabled={semanticTransition}
+                  phase={transitionPhase}
+                  analysisProgress={analysisProgress}
                 />
               </motion.div>
             )}
