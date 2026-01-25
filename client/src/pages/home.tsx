@@ -604,29 +604,31 @@ export default function Home() {
                   scanProgress={scanProgress}
                   pdfPreview={
                     pdfUrl && pdfFile?.type === "application/pdf" ? (
-                      <div className="h-full overflow-y-auto bg-white relative">
-                        <div className="p-6">
-                          <PDFViewer url={pdfUrl} />
+                      <div className="h-full flex items-start justify-center pt-8 pb-8 overflow-y-auto bg-[#F8F9FA]">
+                        <div className="max-w-[750px] w-full bg-white shadow-xl rounded-sm border border-gray-200 relative overflow-hidden">
+                          <div className="p-6">
+                            <PDFViewer url={pdfUrl} />
+                          </div>
+                          {/* Scanning Overlay - only during scanning state */}
+                          {state === "scanning" && (
+                            <motion.div
+                              initial={{ top: "-10%" }}
+                              animate={{ top: "110%" }}
+                              transition={{
+                                duration: 3,
+                                ease: "linear",
+                                repeat: Infinity,
+                                repeatDelay: 0.5
+                              }}
+                              className="absolute left-0 right-0 h-2 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.2)] backdrop-blur-[1px] z-10"
+                            >
+                              <div className="absolute top-0 left-0 right-0 h-[1px] bg-blue-500/50" />
+                            </motion.div>
+                          )}
                         </div>
-                        {/* Scanning Overlay - only during scanning state */}
-                        {state === "scanning" && (
-                          <motion.div
-                            initial={{ top: "-10%" }}
-                            animate={{ top: "110%" }}
-                            transition={{
-                              duration: 3,
-                              ease: "linear",
-                              repeat: Infinity,
-                              repeatDelay: 0.5
-                            }}
-                            className="absolute left-0 right-0 h-2 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.2)] backdrop-blur-[1px] z-10"
-                          >
-                            <div className="absolute top-0 left-0 right-0 h-[1px] bg-blue-500/50" />
-                          </motion.div>
-                        )}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-white">
+                      <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-[#F8F9FA]">
                         <FileText className="w-16 h-16 mb-4 text-gray-300" />
                         <p className="text-sm font-medium">{pdfFile?.name}</p>
                         {state === "scanning" && (
