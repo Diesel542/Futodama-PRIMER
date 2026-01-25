@@ -36,6 +36,8 @@ export async function registerRoutes(
     try {
       // Get language from header
       const language = (req.headers['x-language'] as string) || 'en';
+      // Get model from header
+      const model = (req.headers['x-model'] as string) || 'claude-3-5-sonnet-20241022';
 
       if (!req.file) {
         return res.status(400).json({
@@ -94,7 +96,7 @@ export async function registerRoutes(
       }
 
       // Parse CV into structured sections using LLM
-      const parseResult = await parseWithLLM(extractedText);
+      const parseResult = await parseWithLLM(extractedText, model);
 
       // Check if we got usable sections (but don't fail - show something even if parsing isn't perfect)
       if (parseResult.sections.length === 0 || parseResult.overallConfidence === 'low') {
@@ -118,8 +120,8 @@ export async function registerRoutes(
             completeness: raw.context.completeness as { hasMetrics: boolean; hasOutcomes: boolean; hasTools: boolean; hasTeamSize: boolean } | undefined,
           };
 
-          const message = await phraseObservation(observationContext, language);
-          const proposal = await generateProposal(raw.signal, (raw.context.sectionTitle as string) || 'Section', language);
+          const message = await phraseObservation(observationContext, language, model);
+          const proposal = await generateProposal(raw.signal, (raw.context.sectionTitle as string) || 'Section', language, model);
 
           // Get action from codex
           const action = getActionForSignal(raw.signal);
@@ -132,7 +134,7 @@ export async function registerRoutes(
             const section = parseResult.sections.find(s => s.id === raw.sectionId);
             if (section) {
               const instruction = action.rewriteInstruction[language as 'en' | 'da'] || action.rewriteInstruction.en;
-              rewrittenContent = await generateCodexRewrite(section, instruction, language);
+              rewrittenContent = await generateCodexRewrite(section, instruction, language, model);
             }
           }
 
@@ -145,7 +147,7 @@ export async function registerRoutes(
       const sectionSummaries = parseResult.sections
         .slice(0, 5)
         .map(s => `${s.title}: ${s.content.substring(0, 100)}...`);
-      const strengths = await phraseStrengths(strengthSignals, sectionSummaries, language);
+      const strengths = await phraseStrengths(strengthSignals, sectionSummaries, language, model);
 
       // Build CV object
       const cv: CV = {
@@ -185,6 +187,7 @@ export async function registerRoutes(
   app.post("/api/cv/:cvId/rewrite", async (req, res) => {
     try {
       const { cvId } = req.params;
+      const model = (req.headers['x-model'] as string) || 'claude-3-5-sonnet-20241022';
       const parsed = RewriteRequestSchema.safeParse(req.body);
 
       if (!parsed.success) {
@@ -209,7 +212,8 @@ export async function registerRoutes(
         section.content,
         section.title,
         section.organization,
-        section.duration
+        section.duration,
+        model
       );
 
       const response: RewriteResponse = {
@@ -275,6 +279,7 @@ export async function registerRoutes(
     try {
       const { observationId, sectionId, userInput, section } = req.body;
       const language = (req.headers['x-language'] as string) || 'en';
+      const model = (req.headers['x-model'] as string) || 'claude-3-5-sonnet-20241022';
 
       if (!observationId || !sectionId || !userInput || !section) {
         return res.status(400).json({
@@ -284,7 +289,7 @@ export async function registerRoutes(
       }
 
       // Generate new content based on user input
-      const rewrittenContent = await generateFromUserInput(section, userInput, language);
+      const rewrittenContent = await generateFromUserInput(section, userInput, language, model);
 
       const proposalText = language === 'da'
         ? 'Foreslået forbedring baseret på dine oplysninger.'

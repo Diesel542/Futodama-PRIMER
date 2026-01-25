@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 type Language = 'en' | 'da';
 type Theme = 'light' | 'dark';
+type ModelOption = 'claude-sonnet-4-20250514' | 'claude-3-5-sonnet-20241022' | 'claude-3-haiku-20240307';
 
 interface SettingsContextType {
   language: Language;
@@ -10,6 +11,8 @@ interface SettingsContextType {
   setTheme: (theme: Theme) => void;
   semanticTransition: boolean;
   setSemanticTransition: (enabled: boolean) => void;
+  model: ModelOption;
+  setModel: (model: ModelOption) => void;
   t: (key: string) => string;
 }
 
@@ -179,6 +182,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return false; // Default OFF for safe rollout
   });
 
+  const [model, setModelState] = useState<ModelOption>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('cv-health-model') as ModelOption) || 'claude-3-5-sonnet-20241022';
+    }
+    return 'claude-3-5-sonnet-20241022'; // Default to stable model
+  });
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('cv-health-language', lang);
@@ -192,6 +202,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setSemanticTransition = (enabled: boolean) => {
     setSemanticTransitionState(enabled);
     localStorage.setItem('cv-health-semantic-transition', String(enabled));
+  };
+
+  const setModel = (newModel: ModelOption) => {
+    setModelState(newModel);
+    localStorage.setItem('cv-health-model', newModel);
   };
 
   // Apply theme class to document
@@ -208,7 +223,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SettingsContext.Provider value={{ language, setLanguage, theme, setTheme, semanticTransition, setSemanticTransition, t }}>
+    <SettingsContext.Provider value={{ language, setLanguage, theme, setTheme, semanticTransition, setSemanticTransition, model, setModel, t }}>
       {children}
     </SettingsContext.Provider>
   );
@@ -221,3 +236,5 @@ export function useSettings() {
   }
   return context;
 }
+
+export type { ModelOption };

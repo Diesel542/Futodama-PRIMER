@@ -36,7 +36,10 @@ interface LLMParseResponse {
   sections: ParsedSection[];
 }
 
-export async function parseWithLLM(rawText: string): Promise<ParseResult> {
+export async function parseWithLLM(
+  rawText: string,
+  model: string = 'claude-3-5-sonnet-20241022'
+): Promise<ParseResult> {
   const warnings: string[] = [];
 
   // Truncate if too long (Claude has context limits)
@@ -71,7 +74,7 @@ Return a JSON object with this structure:
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: model,
       max_tokens: 4000,
       system: PARSER_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],
