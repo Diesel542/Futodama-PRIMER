@@ -63,7 +63,7 @@ interface ObservationContext {
 export async function phraseObservation(
   context: ObservationContext,
   language: string = 'en',
-  model: string = 'claude-3-5-sonnet-20241022'
+  model: string = 'claude-sonnet-4-20250514'
 ): Promise<string> {
   const prompt = buildObservationPrompt(context, language);
   const systemPrompt = language === 'da' ? OBSERVATION_SYSTEM_PROMPT_DA : OBSERVATION_SYSTEM_PROMPT_EN;
@@ -229,7 +229,7 @@ export async function generateProposal(
   signal: string,
   sectionTitle: string,
   language: string = 'en',
-  model: string = 'claude-3-5-sonnet-20241022'
+  model: string = 'claude-sonnet-4-20250514'
 ): Promise<string> {
   const isDanish = language === 'da';
 
@@ -282,7 +282,7 @@ export async function rewriteSection(
   sectionTitle: string,
   organization?: string,
   duration?: number,
-  model: string = 'claude-3-5-sonnet-20241022'
+  model: string = 'claude-sonnet-4-20250514'
 ): Promise<string> {
   const context = [
     `Section: ${sectionTitle}`,
@@ -348,7 +348,7 @@ export async function phraseStrengths(
   signals: Array<{ signal: string; context: Record<string, unknown> }>,
   sectionSummaries: string[],
   language: string = 'en',
-  model: string = 'claude-3-5-sonnet-20241022'
+  model: string = 'claude-sonnet-4-20250514'
 ): Promise<string[]> {
   const isDanish = language === 'da';
 
@@ -428,7 +428,7 @@ export async function generateCodexRewrite(
   section: CVSection,
   instruction: string,
   language: string = 'en',
-  model: string = 'claude-3-5-sonnet-20241022'
+  model: string = 'claude-sonnet-4-20250514'
 ): Promise<string> {
   const promptTemplate = loadPrompt('rewrite', language);
 
@@ -458,7 +458,7 @@ export async function generateFromUserInput(
   section: CVSection,
   userInput: string,
   language: string = 'en',
-  model: string = 'claude-3-5-sonnet-20241022'
+  model: string = 'claude-sonnet-4-20250514'
 ): Promise<string> {
   const promptTemplate = loadPrompt('add-info', language);
 
