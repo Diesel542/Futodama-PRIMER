@@ -53,7 +53,7 @@ export function CVTransition({
           showPdf ? "opacity-100" : "opacity-0"
         )}
         style={{
-          clipPath: isPeeling ? `inset(${scanProgress}% 0 0 0)` : 'inset(0 0 0 0)',
+          clipPath: `inset(${isPeeling ? scanProgress : (phase === 'complete' ? 100 : 0)}% 0 0 0)`,
         }}
       >
         <div className={cn(
