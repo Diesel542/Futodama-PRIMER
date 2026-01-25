@@ -20,6 +20,8 @@ interface RoleCardProps {
     rewrittenContent?: string;
     status: string;
   };
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
   onApply: (observationId: string, newContent: string) => void;
   onLock: (observationId: string) => void;
   onSubmitInput: (observationId: string, input: string) => Promise<void>;
@@ -30,15 +32,27 @@ interface RoleCardProps {
 export function RoleCard({
   section,
   observation,
+  isExpanded: controlledExpanded,
+  onToggleExpand,
   onApply,
   onLock,
   onSubmitInput,
   t,
   language
 }: RoleCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Use controlled state if provided, otherwise internal state
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const isExpanded = controlledExpanded ?? internalExpanded;
   const [userInput, setUserInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleToggle = () => {
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setInternalExpanded(!internalExpanded);
+    }
+  };
 
   const hasPendingSuggestion = observation && !['accepted', 'declined', 'locked'].includes(observation.status);
   const isAccepted = observation?.status === 'accepted';
@@ -88,6 +102,7 @@ export function RoleCard({
       {/* Card - grey border with left-edge temperature accent */}
       <motion.div
         layout
+        id={`section-${section.id}`}
         className={cn(
           "rounded-xl border transition-all duration-200",
           "shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]",
@@ -139,7 +154,7 @@ export function RoleCard({
           {/* Suggestion Trigger - neutral grey text */}
           {hasPendingSuggestion && (
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={handleToggle}
               className={cn(
                 "mt-4 flex items-center gap-2 text-sm font-medium transition-colors",
                 "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"

@@ -10,12 +10,12 @@ interface AnalysisPanelProps {
   totalIssues: number;
   resolvedIssues: number;
   language: 'en' | 'da';
-  onObservationClick?: (observationId: string) => void;
+  onSelectObservation: (sectionId: string) => void;
 }
 
 interface ImprovementCardProps {
   observation: Observation;
-  onClick?: () => void;
+  onClick: () => void;
 }
 
 function ImprovementCard({ observation, onClick }: ImprovementCardProps) {
@@ -72,7 +72,7 @@ export function AnalysisPanel({
   totalIssues,
   resolvedIssues,
   language,
-  onObservationClick,
+  onSelectObservation,
 }: AnalysisPanelProps) {
   // Filter to pending observations only, max 3
   const pendingObservations = useMemo(
@@ -233,7 +233,7 @@ export function AnalysisPanel({
                   <ImprovementCard
                     key={obs.id}
                     observation={obs}
-                    onClick={() => onObservationClick?.(obs.id)}
+                    onClick={() => onSelectObservation(obs.sectionId)}
                   />
                 ))}
               </div>
