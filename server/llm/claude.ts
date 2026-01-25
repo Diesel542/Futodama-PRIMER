@@ -60,12 +60,16 @@ interface ObservationContext {
   };
 }
 
-export async function phraseObservation(context: ObservationContext, language: string = 'en'): Promise<string> {
+export async function phraseObservation(
+  context: ObservationContext,
+  language: string = 'en',
+  model: string = 'claude-3-5-sonnet-20241022'
+): Promise<string> {
   const prompt = buildObservationPrompt(context, language);
   const systemPrompt = language === 'da' ? OBSERVATION_SYSTEM_PROMPT_DA : OBSERVATION_SYSTEM_PROMPT_EN;
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: model,
     max_tokens: 150,
     system: systemPrompt,
     messages: [{ role: 'user', content: prompt }],
@@ -221,7 +225,12 @@ Write one sentence making a neutral observation about this section.`;
 // PROPOSAL GENERATION
 // ============================================
 
-export async function generateProposal(signal: string, sectionTitle: string, language: string = 'en'): Promise<string> {
+export async function generateProposal(
+  signal: string,
+  sectionTitle: string,
+  language: string = 'en',
+  model: string = 'claude-3-5-sonnet-20241022'
+): Promise<string> {
   const isDanish = language === 'da';
 
   const prompt = isDanish
@@ -237,7 +246,7 @@ Do not rewrite the section - just suggest what's missing.
 Be specific, not generic.`;
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: model,
     max_tokens: 100,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -272,7 +281,8 @@ export async function rewriteSection(
   originalContent: string,
   sectionTitle: string,
   organization?: string,
-  duration?: number
+  duration?: number,
+  model: string = 'claude-3-5-sonnet-20241022'
 ): Promise<string> {
   const context = [
     `Section: ${sectionTitle}`,
@@ -290,7 +300,7 @@ ${originalContent}
 Rewrite this section to be clearer and more impactful, following the constraints in your instructions.`;
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: model,
     max_tokens: 500,
     system: REWRITE_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: prompt }],
@@ -337,7 +347,8 @@ TONE: Som en senior anmelder, der bemærker ægte styrker. Skriv i en reflektere
 export async function phraseStrengths(
   signals: Array<{ signal: string; context: Record<string, unknown> }>,
   sectionSummaries: string[],
-  language: string = 'en'
+  language: string = 'en',
+  model: string = 'claude-3-5-sonnet-20241022'
 ): Promise<string[]> {
   const isDanish = language === 'da';
 
@@ -385,7 +396,7 @@ Write 2-3 sentences summarizing what this CV does well. Be specific and referenc
   const systemPrompt = isDanish ? STRENGTHS_SYSTEM_PROMPT_DA : STRENGTHS_SYSTEM_PROMPT_EN;
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: model,
     max_tokens: 200,
     system: systemPrompt,
     messages: [{ role: 'user', content: prompt }],
@@ -416,7 +427,8 @@ function formatDuration(startDate?: string, endDate?: string): string {
 export async function generateCodexRewrite(
   section: CVSection,
   instruction: string,
-  language: string = 'en'
+  language: string = 'en',
+  model: string = 'claude-3-5-sonnet-20241022'
 ): Promise<string> {
   const promptTemplate = loadPrompt('rewrite', language);
 
@@ -428,7 +440,7 @@ export async function generateCodexRewrite(
     .replace('{{duration}}', formatDuration(section.startDate, section.endDate));
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: model,
     max_tokens: 1000,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -445,7 +457,8 @@ export async function generateCodexRewrite(
 export async function generateFromUserInput(
   section: CVSection,
   userInput: string,
-  language: string = 'en'
+  language: string = 'en',
+  model: string = 'claude-3-5-sonnet-20241022'
 ): Promise<string> {
   const promptTemplate = loadPrompt('add-info', language);
 
@@ -457,7 +470,7 @@ export async function generateFromUserInput(
     .replace('{{userInput}}', userInput);
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: model,
     max_tokens: 1000,
     messages: [{ role: 'user', content: prompt }],
   });

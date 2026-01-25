@@ -2,11 +2,18 @@ import { useState, useRef, useEffect } from 'react';
 import { Settings, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';
+import type { ModelOption } from '../contexts/SettingsContext';
 import { cn } from '@/lib/utils';
+
+const modelOptions: { value: ModelOption; label: string; description: string }[] = [
+  { value: 'claude-3-5-sonnet-20241022', label: 'Sonnet 3.5', description: 'Stable & reliable' },
+  { value: 'claude-sonnet-4-20250514', label: 'Sonnet 4', description: 'Latest model' },
+  { value: 'claude-3-haiku-20240307', label: 'Haiku', description: 'Fast & light' },
+];
 
 export function SettingsDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const { language, setLanguage, theme, setTheme, semanticTransition, setSemanticTransition, t } = useSettings();
+  const { language, setLanguage, theme, setTheme, semanticTransition, setSemanticTransition, model, setModel, t } = useSettings();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside
@@ -120,7 +127,7 @@ export function SettingsDropdown() {
             </div>
 
             {/* Semantic Transition Toggle */}
-            <div className="p-3">
+            <div className="p-3 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                   {t('settings.transition')}
@@ -141,6 +148,35 @@ export function SettingsDropdown() {
                     )}
                   />
                 </button>
+              </div>
+            </div>
+
+            {/* Model Selector */}
+            <div className="p-3">
+              <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                AI Model
+              </label>
+              <div className="space-y-1">
+                {modelOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setModel(option.value)}
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2 rounded-md text-xs transition-colors",
+                      model === option.value
+                        ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    )}
+                  >
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">{option.label}</span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400">{option.description}</span>
+                    </div>
+                    {model === option.value && (
+                      <Check className="w-3 h-3" />
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
           </motion.div>

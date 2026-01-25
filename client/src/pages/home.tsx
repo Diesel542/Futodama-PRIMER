@@ -153,7 +153,7 @@ const PDFViewer = ({ url }: { url: string }) => {
 };
 
 export default function Home() {
-  const { t, language, semanticTransition } = useSettings();
+  const { t, language, semanticTransition, model } = useSettings();
   const [state, setState] = useState<AppState>("idle");
   const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -288,6 +288,7 @@ export default function Home() {
         method: "POST",
         headers: {
           'X-Language': language,
+          'X-Model': model,
         },
         body: formData,
       });
