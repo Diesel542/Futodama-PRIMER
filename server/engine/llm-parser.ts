@@ -38,7 +38,7 @@ interface LLMParseResponse {
 
 export async function parseWithLLM(
   rawText: string,
-  model: string = 'claude-3-5-sonnet-20241022'
+  model: string = 'claude-sonnet-4-20250514'
 ): Promise<ParseResult> {
   const warnings: string[] = [];
 

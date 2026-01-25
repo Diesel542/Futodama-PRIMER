@@ -37,7 +37,7 @@ export async function registerRoutes(
       // Get language from header
       const language = (req.headers['x-language'] as string) || 'en';
       // Get model from header
-      const model = (req.headers['x-model'] as string) || 'claude-3-5-sonnet-20241022';
+      const model = (req.headers['x-model'] as string) || 'claude-sonnet-4-20250514';
 
       if (!req.file) {
         return res.status(400).json({
@@ -187,7 +187,7 @@ export async function registerRoutes(
   app.post("/api/cv/:cvId/rewrite", async (req, res) => {
     try {
       const { cvId } = req.params;
-      const model = (req.headers['x-model'] as string) || 'claude-3-5-sonnet-20241022';
+      const model = (req.headers['x-model'] as string) || 'claude-sonnet-4-20250514';
       const parsed = RewriteRequestSchema.safeParse(req.body);
 
       if (!parsed.success) {
@@ -279,7 +279,7 @@ export async function registerRoutes(
     try {
       const { observationId, sectionId, userInput, section } = req.body;
       const language = (req.headers['x-language'] as string) || 'en';
-      const model = (req.headers['x-model'] as string) || 'claude-3-5-sonnet-20241022';
+      const model = (req.headers['x-model'] as string) || 'claude-sonnet-4-20250514';
 
       if (!observationId || !sectionId || !userInput || !section) {
         return res.status(400).json({
