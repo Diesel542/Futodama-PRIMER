@@ -4,6 +4,7 @@ import { Leaf, Check, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Observation } from '@shared/schema';
 import type { TransitionPhase } from './CVTransition';
+import { CodeScroll } from './CodeScroll';
 
 interface AnalysisPanelProps {
   strengths: string;
@@ -294,6 +295,13 @@ export function AnalysisPanel({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Code Scroll - only show during analysis */}
+          {!showContent && (
+            <div className="mt-6">
+              <CodeScroll />
+            </div>
+          )}
         </section>
 
         {/* ========== WHAT'S WORKING WELL ========== */}
