@@ -253,17 +253,20 @@ export function AnalysisPanel({
   const showContent = phase === 'complete';
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto relative">
       <div className="p-6 space-y-8">
         {/* ========== STATUS HEADER + HEALTH BAR ========== */}
         <section className="space-y-4">
-          <HealthBar
-            enabled={transitionEnabled}
-            phase={phase}
-            analysisProgress={analysisProgress}
-            healthProgress={healthProgress}
-            language={language}
-          />
+          {/* Only show HealthBar after analysis completes */}
+          {showContent && (
+            <HealthBar
+              enabled={transitionEnabled}
+              phase={phase}
+              analysisProgress={analysisProgress}
+              healthProgress={healthProgress}
+              language={language}
+            />
+          )}
 
           {/* Health Badge - only show when complete */}
           <AnimatePresence>
@@ -296,9 +299,9 @@ export function AnalysisPanel({
             )}
           </AnimatePresence>
 
-          {/* Code Scroll - only show during analysis */}
+          {/* Code Scroll - only show during analysis, centered vertically */}
           {!showContent && (
-            <div className="mt-6">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <CodeScroll />
             </div>
           )}
