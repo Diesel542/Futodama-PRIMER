@@ -100,7 +100,7 @@ const formatDateRange = (start?: string, end?: string): string => {
 export default function Home() {
   const { t, language } = useSettings();
   const [state, setState] = useState<AppState>("idle");
-  const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
+  const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // PDF preview state
@@ -258,8 +258,18 @@ export default function Home() {
     input.click();
   };
 
-  const handleSuggestionClick = (id: string) => {
-    setExpandedSuggestion(expandedSuggestion === id ? null : id);
+  const handleSelectObservation = (sectionId: string) => {
+    // Set the expanded section (this will trigger RoleCard to expand)
+    setExpandedSectionId(sectionId);
+
+    // Scroll to the section
+    const element = document.getElementById(`section-${sectionId}`);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
   };
 
   const handleAction = async (id: string, action: "accepted" | "declined", e: React.MouseEvent) => {
@@ -281,7 +291,7 @@ export default function Home() {
       console.error("Failed to update observation:", error);
     }
 
-    setExpandedSuggestion(null);
+    setExpandedSectionId(null);
   };
 
   // Handlers for RoleCard
@@ -306,12 +316,18 @@ export default function Home() {
     setObservations(prev => prev.map(o =>
       o.id === observationId ? { ...o, status: 'accepted' } : o
     ));
+
+    // Collapse and clear selection
+    setExpandedSectionId(null);
   };
 
   const handleLock = (observationId: string) => {
     setObservations(prev => prev.map(o =>
       o.id === observationId ? { ...o, status: 'locked' } : o
     ));
+
+    // Collapse and clear selection
+    setExpandedSectionId(null);
   };
 
   const handleSubmitInput = async (observationId: string, input: string) => {
@@ -368,6 +384,12 @@ export default function Home() {
                   key={section.id}
                   section={section}
                   observation={obs}
+                  isExpanded={expandedSectionId === section.id}
+                  onToggleExpand={() => {
+                    setExpandedSectionId(
+                      expandedSectionId === section.id ? null : section.id
+                    );
+                  }}
                   onApply={handleApply}
                   onLock={handleLock}
                   onSubmitInput={handleSubmitInput}
@@ -645,7 +667,7 @@ export default function Home() {
                   totalIssues={totalIssues}
                   resolvedIssues={resolvedIssues}
                   language={language}
-                  onObservationClick={handleSuggestionClick}
+                  onSelectObservation={handleSelectObservation}
                 />
               </motion.div>
             )}
