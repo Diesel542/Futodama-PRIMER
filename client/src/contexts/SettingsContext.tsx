@@ -177,16 +177,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const [semanticTransition, setSemanticTransitionState] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('cv-health-semantic-transition') === 'true';
+      const saved = localStorage.getItem('cv-health-semantic-transition');
+      return saved !== 'false'; // Default to true for new users
     }
-    return false; // Default OFF for safe rollout
+    return true;
   });
 
   const [model, setModelState] = useState<ModelOption>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('cv-health-model') as ModelOption) || 'claude-3-5-sonnet-20241022';
+      return (localStorage.getItem('cv-health-model') as ModelOption) || 'claude-sonnet-4-20250514';
     }
-    return 'claude-3-5-sonnet-20241022'; // Default to stable model
+    return 'claude-sonnet-4-20250514';
   });
 
   const setLanguage = (lang: Language) => {
