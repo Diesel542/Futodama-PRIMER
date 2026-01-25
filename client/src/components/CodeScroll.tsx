@@ -68,7 +68,7 @@ export function CodeScroll() {
   return (
     <div
       ref={containerRef}
-      className="relative h-64 overflow-hidden"
+      className="relative h-[500px] overflow-hidden"
       style={{
         maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
         WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
@@ -76,7 +76,7 @@ export function CodeScroll() {
     >
       <div
         ref={contentRef}
-        className="font-mono text-xs text-gray-300 dark:text-gray-600 space-y-1.5 select-none"
+        className="font-mono text-xs text-gray-400 dark:text-gray-500 space-y-1.5 select-none"
       >
         {allLines.map((line, i) => (
           <div
