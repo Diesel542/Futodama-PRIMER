@@ -50,7 +50,7 @@ export function CVTransition({
         <div
           className="absolute inset-0 z-20"
           style={{
-            clipPath: `inset(0 0 ${100 - scanProgress}% 0)`,
+            clipPath: `inset(${scanProgress}% 0 0 0)`,
           }}
         >
           <div className="w-full h-full filter saturate-50 blur-[0.5px]">
