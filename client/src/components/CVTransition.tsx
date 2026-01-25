@@ -27,12 +27,28 @@ export function CVTransition({
     );
   }
 
-  // During idle, analyzing, pause, morphing - show PDF only (no layers)
-  // This prevents any flashing from layer setup
-  if (phase === 'idle' || phase === 'analyzing' || phase === 'pause' || phase === 'morphing') {
+  // During idle, analyzing - show PDF only (simple, no layers)
+  if (phase === 'idle' || phase === 'analyzing') {
     return (
       <div className="relative w-full h-full">
         {pdfPreview}
+      </div>
+    );
+  }
+
+  // During pause, morphing - pre-render layered structure but hide gardener
+  // This prevents flash when transitioning to peeling
+  if (phase === 'pause' || phase === 'morphing') {
+    return (
+      <div className="relative w-full h-full overflow-hidden">
+        {/* Layer 1: Gardener CV (hidden, but pre-rendered) */}
+        <div className="absolute inset-0 z-10 opacity-0 pointer-events-none">
+          {gardenerView}
+        </div>
+        {/* Layer 2: PDF Preview (visible, no clip yet) */}
+        <div className="absolute inset-0 z-20">
+          {pdfPreview}
+        </div>
       </div>
     );
   }
