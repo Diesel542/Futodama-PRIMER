@@ -257,7 +257,17 @@ export function AnalysisPanel({
       <div className="p-6 space-y-8">
         {/* ========== STATUS HEADER + HEALTH BAR ========== */}
         <section className="space-y-4">
-          {/* Only show HealthBar after analysis completes */}
+          {/* Show "Analyzing CV..." header during analysis */}
+          {!showContent && (
+            <div className="flex items-center gap-2">
+              <Leaf className="w-5 h-5 text-green-600 dark:text-green-500" />
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {language === 'da' ? 'Analyserer CV...' : 'Analyzing CV...'}
+              </h1>
+            </div>
+          )}
+
+          {/* Show HealthBar after analysis completes */}
           {showContent && (
             <HealthBar
               enabled={transitionEnabled}
