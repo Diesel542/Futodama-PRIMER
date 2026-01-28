@@ -485,6 +485,37 @@ export default function Home() {
     ));
   };
 
+  const handleRequestGardenerDraft = async (observationId: string) => {
+    const obs = observations.find(o => o.id === observationId);
+    if (!obs || !cvData) return;
+
+    const section = cvData.sections.find(s => s.id === obs.sectionId);
+    if (!section) return;
+
+    const response = await fetch('/api/cv/gardener-draft', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Language': language,
+        'X-Model': model,
+      },
+      body: JSON.stringify({
+        sectionId: obs.sectionId,
+        section,
+      }),
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    setObservations(prev => prev.map(o =>
+      o.id === observationId
+        ? { ...o, rewrittenContent: data.rewrittenContent }
+        : o
+    ));
+  };
+
   // Render section group with timeline
   const renderSectionGroup = (title: string, sections: CVSection[]) => {
     if (sections.length === 0) return null;
@@ -517,6 +548,7 @@ export default function Home() {
                   onLock={handleLock}
                   onSubmitInput={handleSubmitInput}
                   onApplyClaims={handleApplyClaims}
+                  onRequestGardenerDraft={handleRequestGardenerDraft}
                   t={t}
                   language={language}
                 />

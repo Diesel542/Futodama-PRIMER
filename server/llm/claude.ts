@@ -576,6 +576,81 @@ Generate 4-6 suggested role elements that could be added to this section.`;
 }
 
 // ============================================
+// GUIDED EDITING: GARDENER DRAFT (Layer 3)
+// ============================================
+
+const GARDENER_DRAFT_SYSTEM_PROMPT_EN = `You are rewriting a CV role section to be more impactful and complete.
+
+CRITICAL CONSTRAINTS:
+- Preserve the person's authentic voice and facts
+- Expand sparse content with plausible professional language
+- Add structure: lead with impact, then responsibilities, then context
+- Do NOT invent specific metrics or outcomes not implied by the original
+- Keep approximately 30-50% longer than original if sparse, same length if already detailed
+- Use active voice throughout
+- Be specific but not embellished
+
+TONE: Professional, confident, enterprise-appropriate. The Gardener helps the content bloom, not replaces it.`;
+
+const GARDENER_DRAFT_SYSTEM_PROMPT_DA = `Du omskriver en CV-rollesektion til at være mere effektfuld og komplet.
+
+KRITISKE BEGRÆNSNINGER:
+- Bevar personens autentiske stemme og fakta
+- Udvid sparsomt indhold med plausibelt professionelt sprog
+- Tilføj struktur: led med effekt, derefter ansvar, derefter kontekst
+- Opfind IKKE specifikke målinger eller resultater, der ikke er antydet i originalen
+- Hold ca. 30-50% længere end originalen hvis sparsom, samme længde hvis allerede detaljeret
+- Brug aktiv stemme hele vejen igennem
+- Vær specifik men ikke overdreven
+
+TONE: Professionel, selvsikker, virksomhedspassende. Gartneren hjælper indholdet med at blomstre, erstatter det ikke.`;
+
+export async function generateGardenerDraft(
+  section: CVSection,
+  language: string = 'en',
+  model: string = 'claude-sonnet-4-20250514'
+): Promise<string> {
+  const isDanish = language === 'da';
+  const systemPrompt = isDanish ? GARDENER_DRAFT_SYSTEM_PROMPT_DA : GARDENER_DRAFT_SYSTEM_PROMPT_EN;
+
+  const prompt = isDanish
+    ? `Rolle: ${section.title}
+Organisation: ${section.organization || 'Ikke angivet'}
+Periode: ${formatDuration(section.startDate, section.endDate)}
+
+Nuværende indhold:
+"""
+${section.content}
+"""
+
+Omskriv denne rollebeskrivelse til at være mere komplet og effektfuld. Bevar alle fakta, men forbedr struktur og klarhed.`
+    : `Role: ${section.title}
+Organization: ${section.organization || 'Not specified'}
+Period: ${formatDuration(section.startDate, section.endDate)}
+
+Current content:
+"""
+${section.content}
+"""
+
+Rewrite this role description to be more complete and impactful. Preserve all facts but improve structure and clarity.`;
+
+  const response = await anthropic.messages.create({
+    model: model,
+    max_tokens: 800,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = response.content[0];
+  if (text.type !== 'text') {
+    throw new Error('Unexpected response type');
+  }
+
+  return text.text.trim();
+}
+
+// ============================================
 // GUIDED EDITING: SENTENCE STARTERS
 // ============================================
 
