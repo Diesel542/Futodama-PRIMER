@@ -439,27 +439,29 @@ export function RoleCard({
                           </div>
 
                           {/* Gardener Draft */}
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                              {language === 'da' ? 'AI-udkast' : 'AI draft'}
-                            </label>
+                          <div className="pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                              {language === 'da'
+                                ? 'Eller spring valgene over:'
+                                : 'Or skip the selections:'}
+                            </p>
                             <button
                               onClick={handleGardenerDraft}
                               disabled={isGeneratingDraft || !onRequestGardenerDraft}
-                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
                             >
                               {isGeneratingDraft ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  {language === 'da' ? 'Genererer udkast...' : 'Generating draft...'}
-                                </>
+                                <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
-                                <>
-                                  <Wand2 className="w-4 h-4 text-gray-400" />
-                                  {language === 'da' ? 'Lad AI skrive et udkast' : 'Let AI write a draft'}
-                                </>
+                                <Wand2 className="w-4 h-4" />
                               )}
+                              {language === 'da' ? 'Lad AI skrive helt fra bunden' : 'Let AI write from scratch'}
                             </button>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-6">
+                              {language === 'da'
+                                ? 'AI foreslår en komplet tekst baseret på din nuværende rollebeskrivelse'
+                                : 'AI proposes complete text based on your current role description'}
+                            </p>
                           </div>
                         </div>
                       </motion.div>
@@ -488,7 +490,7 @@ export function RoleCard({
                     ) : (
                       <>
                         <Plus className="w-4 h-4" />
-                        {language === 'da' ? 'Generer forslag' : 'Generate suggestion'}
+                        {language === 'da' ? 'Byg fra mine valg' : 'Build from my selections'}
                       </>
                     )}
                   </button>
