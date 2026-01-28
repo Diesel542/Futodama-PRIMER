@@ -98,6 +98,10 @@ export async function registerRoutes(
       // Parse CV into structured sections using LLM
       const parseResult = await parseWithLLM(extractedText, model);
 
+      // Debug logging
+      console.log(`Parsed ${parseResult.sections.length} sections with ${parseResult.overallConfidence} confidence`);
+      parseResult.sections.forEach(s => console.log(`  - ${s.type}: "${s.title}" (${s.wordCount} words)`));
+
       // Check if we got usable sections (but don't fail - show something even if parsing isn't perfect)
       if (parseResult.sections.length === 0 || parseResult.overallConfidence === 'low') {
         console.warn('CV parsing had issues:', parseResult.warnings);
@@ -126,21 +130,34 @@ export async function registerRoutes(
           // Get section for guided editing
           const section = parseResult.sections.find(s => s.id === raw.sectionId);
 
-          // Generate guided edit context
+          // Generate guided edit context (with fallback on failure)
           let guidedEdit = undefined;
           if (section) {
-            const claimBlocks = await generateClaimBlocks(section, raw.signal, language, model);
-            const sentenceStarters = getSentenceStarters(raw.signal, language);
-            const representationStatus = calculateRepresentationStatus(
-              raw.context.wordCount as number || 0,
-              raw.context.durationMonths as number || 0
-            );
+            try {
+              const claimBlocks = await generateClaimBlocks(section, raw.signal, language, model);
+              const sentenceStarters = getSentenceStarters(raw.signal, language);
+              const representationStatus = calculateRepresentationStatus(
+                raw.context.wordCount as number || 0,
+                raw.context.durationMonths as number || 0
+              );
 
-            guidedEdit = {
-              claimBlocks,
-              sentenceStarters,
-              representationStatus,
-            };
+              guidedEdit = {
+                claimBlocks,
+                sentenceStarters,
+                representationStatus,
+              };
+            } catch (claimError) {
+              console.error('Failed to generate guided edit context:', claimError);
+              // Provide fallback guided edit so observation still works
+              guidedEdit = {
+                claimBlocks: [],
+                sentenceStarters: getSentenceStarters(raw.signal, language),
+                representationStatus: calculateRepresentationStatus(
+                  raw.context.wordCount as number || 0,
+                  raw.context.durationMonths as number || 0
+                ),
+              };
+            }
           }
 
           // Legacy: Get action from codex (for backwards compatibility during transition)
@@ -157,9 +174,13 @@ export async function registerRoutes(
           }
 
           // Use guided_edit as primary action type
-          return createObservation(raw, message, proposal, 'guided_edit', inputPrompt, rewrittenContent, guidedEdit);
+          const obs = createObservation(raw, message, proposal, 'guided_edit', inputPrompt, rewrittenContent, guidedEdit);
+          console.log(`Created observation: ${obs.id} for section ${obs.sectionId} (${obs.guidedEdit?.claimBlocks?.length || 0} claim blocks)`);
+          return obs;
         })
       );
+
+      console.log(`Generated ${phrasedObservations.length} observations total`);
 
       // Identify and phrase strengths
       const strengthSignals = identifyStrengths(parseResult.sections);
