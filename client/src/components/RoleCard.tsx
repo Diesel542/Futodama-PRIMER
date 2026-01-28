@@ -1,36 +1,37 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check, Lock, Loader2, ArrowRight, Plus, Wand2, TrendingUp, Target, Users, Package } from 'lucide-react';
+import { Check, Lock, Loader2, ArrowRight, Wand2, TrendingUp, Target, Users, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+type EditingLayer = 'nudge' | 'assist' | 'preview';
+
+// Outcome pickers - no labels shown in UI, just icons
 const OUTCOME_PICKERS = [
   {
     category: 'revenue' as const,
     icon: TrendingUp,
-    label: { en: 'Revenue impact', da: 'Omsætningseffekt' },
+    label: { en: 'Revenue', da: 'Omsætning' },
     scaffold: { en: 'Contributed to revenue growth by ___', da: 'Bidrog til omsætningsvækst ved ___' },
   },
   {
     category: 'positioning' as const,
     icon: Target,
-    label: { en: 'Market positioning', da: 'Markedspositionering' },
+    label: { en: 'Positioning', da: 'Positionering' },
     scaffold: { en: 'Strengthened market position through ___', da: 'Styrkede markedsposition gennem ___' },
   },
   {
     category: 'team_growth' as const,
     icon: Users,
-    label: { en: 'Team growth', da: 'Teamvækst' },
-    scaffold: { en: 'Built and developed team capabilities in ___', da: 'Opbyggede og udviklede teamkompetencer inden for ___' },
+    label: { en: 'Team', da: 'Team' },
+    scaffold: { en: 'Built and developed team capabilities in ___', da: 'Opbyggede teamkompetencer inden for ___' },
   },
   {
     category: 'delivery' as const,
     icon: Package,
-    label: { en: 'Delivery performance', da: 'Leveringsperformance' },
+    label: { en: 'Delivery', da: 'Levering' },
     scaffold: { en: 'Improved delivery outcomes by ___', da: 'Forbedrede leveringsresultater ved ___' },
   },
 ];
-
-type EditingLayer = 'nudge' | 'assist' | 'preview';
 
 interface RoleCardProps {
   section: {
@@ -78,19 +79,13 @@ export function RoleCard({
   t,
   language
 }: RoleCardProps) {
-  // Use controlled state if provided, otherwise internal state
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isExpanded = controlledExpanded ?? internalExpanded;
 
-  // Layer state
   const [layer, setLayer] = useState<EditingLayer>('nudge');
-
-  // Selection state for Claim Blocks
   const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
   const [additionalText, setAdditionalText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // Current sentence starter index
   const [starterIndex, setStarterIndex] = useState(0);
 
   // Layer 3 state
@@ -103,11 +98,11 @@ export function RoleCard({
     } else {
       setInternalExpanded(!internalExpanded);
     }
-    // Reset layer when collapsing
     if (isExpanded) {
       setLayer('nudge');
       setSelectedClaims(new Set());
       setAdditionalText('');
+      setShowPowerTools(false);
     }
   };
 
@@ -115,7 +110,6 @@ export function RoleCard({
   const isAccepted = observation?.status === 'accepted';
   const guidedEdit = observation?.guidedEdit;
 
-  // Get current sentence starter
   const currentStarter = useMemo(() => {
     if (!guidedEdit?.sentenceStarters?.length) return '';
     return guidedEdit.sentenceStarters[starterIndex % guidedEdit.sentenceStarters.length];
@@ -150,7 +144,7 @@ export function RoleCard({
 
     setIsProcessing(true);
 
-    // Filter out any text containing unfilled ___ placeholders
+    // Filter out unfilled placeholders
     const cleanedClaims = Array.from(selectedClaims).filter(claim => !claim.includes('___'));
     const cleanedText = additionalText.includes('___')
       ? additionalText.split('\n').filter(line => !line.includes('___')).join('\n')
@@ -159,13 +153,29 @@ export function RoleCard({
     if (onApplyClaims) {
       await onApplyClaims(observation.id, cleanedClaims, cleanedText);
     } else {
-      // Fallback to old input method
       const combinedInput = [...cleanedClaims, cleanedText].filter(Boolean).join('\n');
       await onSubmitInput(observation.id, combinedInput);
     }
 
     setIsProcessing(false);
     setLayer('preview');
+  };
+
+  const handleGardenerDraft = async () => {
+    if (!observation || !onRequestGardenerDraft) return;
+    setIsGeneratingDraft(true);
+    await onRequestGardenerDraft(observation.id);
+    setIsGeneratingDraft(false);
+    setLayer('preview');
+  };
+
+  const handleOutcomeSelect = (scaffold: string) => {
+    setAdditionalText(prev => {
+      if (prev.trim()) {
+        return prev + '\n' + scaffold;
+      }
+      return scaffold;
+    });
   };
 
   const handleApply = () => {
@@ -196,51 +206,15 @@ export function RoleCard({
     }
   };
 
-  // Cycle sentence starter on focus
   const handleTextareaFocus = () => {
     if (guidedEdit?.sentenceStarters?.length) {
       setStarterIndex(prev => prev + 1);
     }
   };
 
-  // Layer 3: Gardener Draft handler
-  const handleGardenerDraft = async () => {
-    if (!observation || !onRequestGardenerDraft) return;
-
-    setIsGeneratingDraft(true);
-    try {
-      await onRequestGardenerDraft(observation.id);
-      setLayer('preview');
-    } finally {
-      setIsGeneratingDraft(false);
-    }
-  };
-
-  // Layer 3: Outcome picker handler
-  const handleOutcomeSelect = (scaffold: string) => {
-    // Insert scaffold at cursor or append to additional text
-    setAdditionalText(prev => {
-      if (prev.trim()) {
-        return prev + '\n' + scaffold;
-      }
-      return scaffold;
-    });
-  };
-
-  // Representation status label
-  const representationLabel = useMemo(() => {
-    if (!guidedEdit?.representationStatus) return null;
-    const labels = {
-      too_short: language === 'da' ? 'Repræsentation: for kort' : 'Representation: too short',
-      balanced: language === 'da' ? 'Repræsentation: balanceret' : 'Representation: balanced',
-      too_long: language === 'da' ? 'Repræsentation: for lang' : 'Representation: too long',
-    };
-    return labels[guidedEdit.representationStatus];
-  }, [guidedEdit?.representationStatus, language]);
-
   return (
     <div className="relative">
-      {/* Timeline dot - temperature colors */}
+      {/* Timeline dot */}
       <div
         className={cn(
           "absolute -left-8 top-6 w-3 h-3 rounded-full border-2 bg-white dark:bg-gray-900",
@@ -270,7 +244,6 @@ export function RoleCard({
       >
         {/* Card Header */}
         <div className="p-5">
-          {/* Title Row */}
           <div className="flex items-start justify-between gap-4 mb-1">
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
               {section.title}
@@ -280,14 +253,12 @@ export function RoleCard({
             </span>
           </div>
 
-          {/* Organization */}
           {section.organization && (
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
               {section.organization}
             </p>
           )}
 
-          {/* Content */}
           <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed space-y-2">
             {section.content.split('\n').filter(Boolean).map((line, i) => {
               const trimmed = line.trim();
@@ -303,15 +274,14 @@ export function RoleCard({
             })}
           </div>
 
-          {/* ========== LAYER 1: NUDGE ========== */}
+          {/* Layer 1: Nudge */}
           {hasPendingSuggestion && layer === 'nudge' && !isExpanded && (
-            <div className="mt-4 space-y-2">
-              {/* Diagnostic message */}
-              <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+            <div className="mt-4 space-y-3">
+              {/* Single calm observation sentence */}
+              <p className="text-sm text-gray-500 dark:text-gray-400 italic">
                 {observation.message}
               </p>
 
-              {/* Single action button */}
               <button
                 onClick={() => {
                   handleToggle();
@@ -334,7 +304,7 @@ export function RoleCard({
           )}
         </div>
 
-        {/* ========== LAYER 2: ASSIST ========== */}
+        {/* Layer 2: Assist */}
         <AnimatePresence>
           {isExpanded && hasPendingSuggestion && observation && layer === 'assist' && (
             <motion.div
@@ -344,174 +314,139 @@ export function RoleCard({
               transition={{ duration: 0.2, ease: 'easeOut' }}
               className="overflow-hidden"
             >
-              <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-5 space-y-4">
-                {/* Representation status */}
-                {representationLabel && guidedEdit?.representationStatus !== 'balanced' && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {representationLabel}
-                  </div>
-                )}
+              <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 p-5 space-y-5">
 
-                {/* Claim Blocks */}
+                {/* Single calm sentence - replaces all headings */}
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {observation.message}
+                </p>
+
+                {/* Claim Blocks - discovery-style, not buttons */}
                 {guidedEdit?.claimBlocks && guidedEdit.claimBlocks.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {language === 'da' ? 'Foreslåede elementer (klik for at tilføje)' : 'Suggested elements (click to add)'}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {guidedEdit.claimBlocks.map((claim, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleClaimToggle(claim)}
-                          className={cn(
-                            "px-3 py-1.5 text-sm rounded-full border transition-all",
-                            selectedClaims.has(claim)
-                              ? "bg-[#E8F5E8] dark:bg-[#1A2F1C] border-green-300 dark:border-green-700 text-green-800 dark:text-green-300"
-                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
-                          )}
-                        >
-                          {selectedClaims.has(claim) && <Check className="w-3 h-3 inline mr-1" />}
-                          {claim}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    {guidedEdit.claimBlocks.map((claim, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleClaimToggle(claim)}
+                        className={cn(
+                          "px-3 py-2 text-sm rounded-lg transition-all duration-150",
+                          selectedClaims.has(claim)
+                            ? "bg-[#E8F5E8] dark:bg-[#1A2F1C] text-gray-800 dark:text-gray-200"
+                            : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        )}
+                        style={{
+                          boxShadow: selectedClaims.has(claim)
+                            ? 'none'
+                            : '0 1px 2px rgba(0,0,0,0.04)'
+                        }}
+                      >
+                        {selectedClaims.has(claim) && (
+                          <Check className="w-3.5 h-3.5 inline mr-1.5 text-green-600 dark:text-green-500" />
+                        )}
+                        {claim}
+                      </button>
+                    ))}
                   </div>
                 )}
 
-                {/* Additional text input with sentence starter */}
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                    {language === 'da' ? 'Tilføj dine egne detaljer (valgfrit)' : 'Add your own details (optional)'}
-                  </label>
-                  <textarea
-                    value={additionalText}
-                    onChange={(e) => setAdditionalText(e.target.value)}
-                    onFocus={handleTextareaFocus}
-                    placeholder={currentStarter}
-                    className="w-full p-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 placeholder:italic"
-                    rows={3}
-                    disabled={isProcessing}
-                  />
-                </div>
+                {/* Text area - no label, just placeholder */}
+                <textarea
+                  value={additionalText}
+                  onChange={(e) => setAdditionalText(e.target.value)}
+                  onFocus={handleTextareaFocus}
+                  placeholder={currentStarter}
+                  className="w-full p-4 text-sm rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic border-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
+                  rows={3}
+                  disabled={isProcessing}
+                />
 
-                {/* Layer 3: Power Tools */}
-                <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                {/* Power tools reveal - quiet affordance */}
+                <AnimatePresence>
+                  {showPowerTools && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-2 space-y-4">
+                        {/* Outcome pickers - minimal tokens */}
+                        <div className="flex flex-wrap gap-2">
+                          {OUTCOME_PICKERS.map((picker) => {
+                            const Icon = picker.icon;
+                            return (
+                              <button
+                                key={picker.category}
+                                onClick={() => handleOutcomeSelect(picker.scaffold[language as 'en' | 'da'] || picker.scaffold.en)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                              >
+                                <Icon className="w-3.5 h-3.5" />
+                                <span>{picker.label[language as 'en' | 'da'] || picker.label.en}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Gardener draft option */}
+                        <button
+                          onClick={handleGardenerDraft}
+                          disabled={isGeneratingDraft}
+                          className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
+                        >
+                          {isGeneratingDraft ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Wand2 className="w-4 h-4" />
+                          )}
+                          <span>{language === 'da' ? 'Prøv et AI-udkast' : 'Try an AI draft'}</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Actions */}
+                <div className="flex items-center justify-between pt-2">
+                  {/* "Need more help?" - quiet reveal trigger */}
                   <button
                     onClick={() => setShowPowerTools(!showPowerTools)}
-                    className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                    className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
                   >
-                    <ChevronDown className={cn(
-                      "w-3 h-3 transition-transform",
-                      showPowerTools && "rotate-180"
-                    )} />
                     {showPowerTools
-                      ? (language === 'da' ? 'Skjul power tools' : 'Hide power tools')
-                      : (language === 'da' ? 'Vis power tools' : 'Show power tools')
+                      ? (language === 'da' ? 'Skjul' : 'Hide')
+                      : (language === 'da' ? 'Brug for mere hjælp?' : 'Need more help?')
                     }
                   </button>
 
-                  <AnimatePresence>
-                    {showPowerTools && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="pt-4 space-y-4">
-                          {/* Outcome Pickers */}
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                              {language === 'da' ? 'Udfaldsskabeloner' : 'Outcome scaffolds'}
-                            </label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {OUTCOME_PICKERS.map((picker) => {
-                                const Icon = picker.icon;
-                                return (
-                                  <button
-                                    key={picker.category}
-                                    onClick={() => handleOutcomeSelect(picker.scaffold[language as 'en' | 'da'] || picker.scaffold.en)}
-                                    className="flex items-center gap-2 px-3 py-2 text-xs text-left rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                  >
-                                    <Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                    <span className="text-gray-700 dark:text-gray-300">
-                                      {picker.label[language as 'en' | 'da'] || picker.label.en}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
+                  <div className="flex items-center gap-4">
+                    {/* Back as text link */}
+                    <button
+                      onClick={handleBack}
+                      className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                    >
+                      {language === 'da' ? 'Tilbage' : 'Back'}
+                    </button>
 
-                          {/* Gardener Draft */}
-                          <div className="pt-3 border-t border-gray-200 dark:border-gray-600 mt-3">
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">
-                              {language === 'da'
-                                ? 'Eller spring valgene over:'
-                                : 'Or skip the selections:'}
-                            </p>
-                            <button
-                              onClick={handleGardenerDraft}
-                              disabled={isGeneratingDraft || !onRequestGardenerDraft}
-                              className="w-full px-4 py-2.5 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                              {isGeneratingDraft ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  {language === 'da' ? 'Genererer...' : 'Generating...'}
-                                </>
-                              ) : (
-                                <>
-                                  <Wand2 className="w-4 h-4" />
-                                  {language === 'da' ? 'Lad AI skrive helt fra bunden' : 'Let AI write from scratch'}
-                                </>
-                              )}
-                            </button>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">
-                              {language === 'da'
-                                ? 'AI foreslår en komplet tekst baseret på din nuværende rollebeskrivelse'
-                                : 'AI proposes complete text based on your current role description'}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 justify-end pt-2">
-                  <button
-                    onClick={handleBack}
-                    className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    {t('complete.back')}
-                  </button>
-                  <button
-                    onClick={handleGeneratePreview}
-                    disabled={selectedClaims.size === 0 && !additionalText.trim() || isProcessing}
-                    className="px-4 py-2 text-sm font-medium bg-[#1a3a2a] text-white rounded-lg hover:bg-[#2a4a3a] transition-colors disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {isProcessing ? (
-                      <>
+                    {/* One primary action */}
+                    <button
+                      onClick={handleGeneratePreview}
+                      disabled={selectedClaims.size === 0 && !additionalText.trim() || isProcessing}
+                      className="px-5 py-2 text-sm font-medium bg-[#1a3a2a] text-white rounded-lg hover:bg-[#2a4a3a] transition-colors disabled:opacity-40 flex items-center gap-2"
+                    >
+                      {isProcessing ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        {language === 'da' ? 'Genererer...' : 'Generating...'}
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4" />
-                        {language === 'da' ? 'Byg fra mine valg' : 'Build from my selections'}
-                      </>
-                    )}
-                  </button>
+                      ) : null}
+                      <span>{language === 'da' ? 'Generer forslag' : 'Generate suggestion'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ========== PREVIEW (post-assist) ========== */}
+        {/* Preview */}
         <AnimatePresence>
           {isExpanded && hasPendingSuggestion && observation && layer === 'preview' && observation.rewrittenContent && (
             <motion.div
@@ -521,36 +456,41 @@ export function RoleCard({
               transition={{ duration: 0.15, ease: 'easeOut' }}
               className="overflow-hidden"
             >
-              <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-5 space-y-4">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {t('complete.suggestedChange')}
-                </label>
-                <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86] rounded-lg">
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 p-5 space-y-4">
+                {/* Preview content - no label */}
+                <div className="p-4 bg-white dark:bg-gray-800 border-l-2 border-l-[#7BAF86] rounded-r-lg">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                     {observation.rewrittenContent}
                   </p>
                 </div>
-                <div className="flex gap-2 justify-end">
+
+                {/* Actions */}
+                <div className="flex items-center justify-between">
+                  {/* Back as text link */}
                   <button
                     onClick={handleBack}
-                    className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                   >
                     {language === 'da' ? 'Tilbage' : 'Back'}
                   </button>
-                  <button
-                    onClick={handleLock}
-                    className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 border border-gray-200 dark:border-gray-600"
-                  >
-                    <Lock className="w-4 h-4" />
-                    {t('complete.lock')}
-                  </button>
-                  <button
-                    onClick={handleApply}
-                    className="px-4 py-2 text-sm font-medium bg-[#1a3a2a] text-white rounded-lg hover:bg-[#2a4a3a] transition-colors flex items-center gap-2"
-                  >
-                    <Check className="w-4 h-4" />
-                    {t('complete.apply')}
-                  </button>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleLock}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>{language === 'da' ? 'Behold original' : 'Keep original'}</span>
+                    </button>
+
+                    <button
+                      onClick={handleApply}
+                      className="px-5 py-2 text-sm font-medium bg-[#1a3a2a] text-white rounded-lg hover:bg-[#2a4a3a] transition-colors flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>{language === 'da' ? 'Anvend' : 'Apply'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
