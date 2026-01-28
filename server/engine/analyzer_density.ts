@@ -33,9 +33,6 @@ export function analyzeDensity(section: CVSection): DensitySignal | null {
 
   const wordsPerMonth = section.wordCount / section.duration;
 
-  // Update section with computed score
-  section.densityScore = wordsPerMonth;
-
   // Determine signal
   let signal: DensitySignal['signal'];
   let confidence: number;

@@ -31,6 +31,16 @@ export function generateObservations(sections: CVSection[]): RawObservation[] {
   const gapSignals = detectGaps(sections);
   const structuralSignals = analyzeStructureAll(sections);
 
+  // Apply computed scores to sections (for use by identifyStrengths)
+  for (const signal of densitySignals) {
+    const section = sections.find(s => s.id === signal.sectionId);
+    if (section) section.densityScore = signal.densityScore;
+  }
+  for (const signal of temporalSignals) {
+    const section = sections.find(s => s.id === signal.sectionId);
+    if (section) section.recencyScore = signal.recencyScore;
+  }
+
   // Convert density signals
   for (const signal of densitySignals) {
     if (signal.signal === 'healthy_density') continue; // Don't observe healthy

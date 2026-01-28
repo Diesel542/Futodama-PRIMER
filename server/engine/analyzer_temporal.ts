@@ -39,9 +39,6 @@ export function analyzeTemporal(section: CVSection): TemporalSignal | null {
       + (now.getMonth() - endDate.getMonth());
   }
 
-  // Update section with computed score
-  section.recencyScore = monthsSinceEnd;
-
   // Determine signal
   let signal: TemporalSignal['signal'];
   let confidence: number;
