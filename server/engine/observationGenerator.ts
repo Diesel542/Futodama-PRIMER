@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { CVSection, Observation, ObservationType, ActionType } from '@shared/schema';
+import { CVSection, Observation, ObservationType, ActionType, GuidedEditContext } from '@shared/schema';
 import { CONFIDENCE_THRESHOLDS } from './thresholds';
 import { getActionForSignal } from '../codex';
 import { DensitySignal, analyzeDensityAll } from './analyzer_density';
@@ -119,9 +119,10 @@ export function createObservation(
   raw: RawObservation,
   message: string,
   proposal?: string,
-  actionType: ActionType = 'add_info',
+  actionType: ActionType = 'guided_edit',
   inputPrompt?: string,
-  rewrittenContent?: string
+  rewrittenContent?: string,
+  guidedEdit?: GuidedEditContext
 ): Observation {
   return {
     id: `obs-${uuidv4().slice(0, 8)}`,
@@ -134,6 +135,7 @@ export function createObservation(
     actionType,
     inputPrompt,
     rewrittenContent,
+    guidedEdit,
     status: 'pending',
   };
 }

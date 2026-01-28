@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { cvStorage } from "./storage";
 import { parseWithLLM } from "./engine/llm-parser";
 import { generateObservations, createObservation, identifyStrengths } from "./engine/observationGenerator";
-import { phraseObservation, generateProposal, rewriteSection, phraseStrengths, generateCodexRewrite, generateFromUserInput } from "./llm/claude";
+import { phraseObservation, generateProposal, rewriteSection, phraseStrengths, generateCodexRewrite, generateFromUserInput, generateClaimBlocks, getSentenceStarters, calculateRepresentationStatus } from "./llm/claude";
 import { getActionForSignal } from './codex';
 import { PARSE_THRESHOLDS } from "./engine/thresholds";
 import {
@@ -106,7 +106,7 @@ export async function registerRoutes(
       // Generate raw observations
       const rawObservations = generateObservations(parseResult.sections);
 
-      // Phrase observations using LLM and add action info
+      // Phrase observations using LLM and add action info + guided edit context
       const phrasedObservations = await Promise.all(
         rawObservations.map(async (raw) => {
           const observationContext = {
@@ -123,22 +123,41 @@ export async function registerRoutes(
           const message = await phraseObservation(observationContext, language, model);
           const proposal = await generateProposal(raw.signal, (raw.context.sectionTitle as string) || 'Section', language, model);
 
-          // Get action from codex
+          // Get section for guided editing
+          const section = parseResult.sections.find(s => s.id === raw.sectionId);
+
+          // Generate guided edit context
+          let guidedEdit = undefined;
+          if (section) {
+            const claimBlocks = await generateClaimBlocks(section, raw.signal, language, model);
+            const sentenceStarters = getSentenceStarters(raw.signal, language);
+            const representationStatus = calculateRepresentationStatus(
+              raw.context.wordCount as number || 0,
+              raw.context.durationMonths as number || 0
+            );
+
+            guidedEdit = {
+              claimBlocks,
+              sentenceStarters,
+              representationStatus,
+            };
+          }
+
+          // Legacy: Get action from codex (for backwards compatibility during transition)
           const action = getActionForSignal(raw.signal);
-          const actionType = action?.actionType || 'add_info';
           const inputPrompt = action?.inputPrompt?.[language as 'en' | 'da'] || action?.inputPrompt?.en;
 
           // For rewrite actions, pre-generate the content
           let rewrittenContent: string | undefined;
-          if (actionType === 'rewrite' && action?.rewriteInstruction) {
-            const section = parseResult.sections.find(s => s.id === raw.sectionId);
+          if (action?.actionType === 'rewrite' && action?.rewriteInstruction) {
             if (section) {
               const instruction = action.rewriteInstruction[language as 'en' | 'da'] || action.rewriteInstruction.en;
               rewrittenContent = await generateCodexRewrite(section, instruction, language, model);
             }
           }
 
-          return createObservation(raw, message, proposal, actionType, inputPrompt, rewrittenContent);
+          // Use guided_edit as primary action type
+          return createObservation(raw, message, proposal, 'guided_edit', inputPrompt, rewrittenContent, guidedEdit);
         })
       );
 
@@ -305,6 +324,50 @@ export async function registerRoutes(
       console.error("Process input error:", error);
       res.status(500).json({
         error: "Failed to process input",
+        code: "ANALYSIS_FAILED"
+      } as ErrorResponse);
+    }
+  });
+
+  // ============================================
+  // POST /api/cv/apply-claims
+  // ============================================
+  app.post("/api/cv/apply-claims", async (req, res) => {
+    try {
+      const { sectionId, selectedClaims, additionalText, section } = req.body;
+      const language = (req.headers['x-language'] as string) || 'en';
+      const model = (req.headers['x-model'] as string) || 'claude-sonnet-4-20250514';
+
+      if (!sectionId || !section) {
+        return res.status(400).json({
+          error: "Missing required fields",
+          code: "PARSE_FAILED"
+        } as ErrorResponse);
+      }
+
+      // Combine selected claims with any additional text
+      const claimsText = (selectedClaims || []).join('. ');
+      const combinedInput = [claimsText, additionalText].filter(Boolean).join('\n\n');
+
+      if (!combinedInput.trim()) {
+        return res.status(400).json({
+          error: "No content to apply",
+          code: "PARSE_FAILED"
+        } as ErrorResponse);
+      }
+
+      // Generate enhanced content incorporating the claims
+      const rewrittenContent = await generateFromUserInput(section, combinedInput, language, model);
+
+      res.json({
+        sectionId,
+        rewrittenContent,
+      });
+
+    } catch (error) {
+      console.error("Apply claims error:", error);
+      res.status(500).json({
+        error: "Failed to apply claims",
         code: "ANALYSIS_FAILED"
       } as ErrorResponse);
     }
