@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import multer from "multer";
-import mammoth from "mammoth";
 import { v4 as uuidv4 } from 'uuid';
 
+import { extractText } from "./engine/text-extractor";
 import { cvStorage } from "./storage";
 import { parseWithLLM } from "./engine/llm-parser";
 import { generateObservations, createObservation, identifyStrengths } from "./engine/observationGenerator";
@@ -46,46 +46,53 @@ export async function registerRoutes(
         } as ErrorResponse);
       }
 
-      let extractedText = "";
       const fileBuffer = req.file.buffer;
       const mimeType = req.file.mimetype;
+      const filename = req.file.originalname;
 
-      // Extract text based on file type
-      if (mimeType === "application/pdf") {
-        // pdf-parse has ESM/CJS interop issues - handle various export patterns
-        const pdfParseModule = await import("pdf-parse") as any;
+      // Validate file type
+      const allowedTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword',
+      ];
 
-        let pdfData: { text: string };
-
-        // Check if PDFParse is a class (Replit pattern) vs function (standard pattern)
-        if (pdfParseModule.PDFParse) {
-          // PDFParse is a class - pass data in constructor, then call getText()
-          const parser = new pdfParseModule.PDFParse({ data: fileBuffer });
-          const textResult = await parser.getText();
-          pdfData = { text: textResult.text };
-        } else {
-          // Standard pattern - default export is a function
-          const pdfParse = pdfParseModule.default || pdfParseModule;
-          if (typeof pdfParse !== 'function') {
-            console.error('pdf-parse module structure:', Object.keys(pdfParseModule));
-            throw new Error('Could not load PDF parser');
-          }
-          pdfData = await pdfParse(fileBuffer);
-        }
-
-        extractedText = pdfData.text;
-      } else if (
-        mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        mimeType === "application/msword"
-      ) {
-        const result = await mammoth.extractRawText({ buffer: fileBuffer });
-        extractedText = result.value;
-      } else {
+      if (!allowedTypes.includes(mimeType)) {
         return res.status(400).json({
-          error: "Unsupported file type. Please upload PDF or DOCX.",
+          error: "Unsupported file type. Please upload PDF or Word document.",
           code: "UNSUPPORTED_FORMAT"
         } as ErrorResponse);
       }
+
+      // Extract text using hardened extractor
+      const extraction = await extractText(fileBuffer, mimeType, filename);
+
+      // Log extraction result
+      console.log('[Analyze] Extraction complete:', {
+        method: extraction.method,
+        chars: extraction.text.length,
+        warnings: extraction.warnings,
+        pageCount: extraction.pageCount,
+      });
+
+      // Check for extraction warnings
+      if (extraction.warnings.length > 0) {
+        console.warn('[Analyze] Extraction warnings:', extraction.warnings);
+      }
+
+      // Check if extraction failed completely
+      if (!extraction.text || extraction.text.length === 0) {
+        const errorMessage = extraction.warnings.length > 0
+          ? `Could not read document: ${extraction.warnings[0]}`
+          : "Could not extract text from document. It may be scanned or protected.";
+
+        return res.status(400).json({
+          error: errorMessage,
+          code: "EXTRACTION_FAILED"
+        } as ErrorResponse);
+      }
+
+      const extractedText = extraction.text;
 
       // Basic validation
       if (extractedText.length < PARSE_THRESHOLDS.MIN_CONTENT_LENGTH) {
