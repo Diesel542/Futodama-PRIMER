@@ -19,5 +19,7 @@ REGLER:
 5. Kvantificer resultater hvor muligt
 6. Fjern ikke eksisterende faktuel information
 7. Output KUN det forbedrede indhold, ingen forklaringer
+8. Hvis input indeholder uudfyldte pladsholdere som "___", skal du enten udfylde dem med plausibelt indhold ELLER udelade den sætning helt. Output ALDRIG rå "___"
+9. Skriv i almindelig prosa - ingen markdown-formatering, ingen punktopstillinger med asterisker
 
 FORBEDRET INDHOLD:
