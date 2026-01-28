@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Sparkles, Check, Lock, Loader2 } from 'lucide-react';
+import { ChevronDown, Check, Lock, Loader2, ArrowRight, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+type EditingLayer = 'nudge' | 'assist' | 'preview';
 
 interface RoleCardProps {
   section: {
@@ -15,16 +17,22 @@ interface RoleCardProps {
   observation?: {
     id: string;
     message: string;
-    actionType: 'rewrite' | 'add_info';
+    actionType: 'rewrite' | 'add_info' | 'guided_edit';
     inputPrompt?: string;
     rewrittenContent?: string;
     status: string;
+    guidedEdit?: {
+      claimBlocks: string[];
+      sentenceStarters: string[];
+      representationStatus: 'too_short' | 'balanced' | 'too_long';
+    };
   };
   isExpanded?: boolean;
   onToggleExpand?: () => void;
   onApply: (observationId: string, newContent: string) => void;
   onLock: (observationId: string) => void;
   onSubmitInput: (observationId: string, input: string) => Promise<void>;
+  onApplyClaims?: (observationId: string, selectedClaims: string[], additionalText: string) => Promise<void>;
   t: (key: string) => string;
   language: string;
 }
@@ -37,14 +45,24 @@ export function RoleCard({
   onApply,
   onLock,
   onSubmitInput,
+  onApplyClaims,
   t,
   language
 }: RoleCardProps) {
   // Use controlled state if provided, otherwise internal state
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isExpanded = controlledExpanded ?? internalExpanded;
-  const [userInput, setUserInput] = useState('');
+
+  // Layer state
+  const [layer, setLayer] = useState<EditingLayer>('nudge');
+
+  // Selection state for Claim Blocks
+  const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
+  const [additionalText, setAdditionalText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Current sentence starter index
+  const [starterIndex, setStarterIndex] = useState(0);
 
   const handleToggle = () => {
     if (onToggleExpand) {
@@ -52,10 +70,23 @@ export function RoleCard({
     } else {
       setInternalExpanded(!internalExpanded);
     }
+    // Reset layer when collapsing
+    if (isExpanded) {
+      setLayer('nudge');
+      setSelectedClaims(new Set());
+      setAdditionalText('');
+    }
   };
 
   const hasPendingSuggestion = observation && !['accepted', 'declined', 'locked'].includes(observation.status);
   const isAccepted = observation?.status === 'accepted';
+  const guidedEdit = observation?.guidedEdit;
+
+  // Get current sentence starter
+  const currentStarter = useMemo(() => {
+    if (!guidedEdit?.sentenceStarters?.length) return '';
+    return guidedEdit.sentenceStarters[starterIndex % guidedEdit.sentenceStarters.length];
+  }, [guidedEdit?.sentenceStarters, starterIndex]);
 
   const formatDate = (date?: string) => {
     if (!date) return t('date.present');
@@ -65,29 +96,88 @@ export function RoleCard({
     });
   };
 
-  const handleSubmit = async () => {
-    if (!observation || !userInput.trim()) return;
+  const handleImproveClick = () => {
+    setLayer('assist');
+  };
+
+  const handleClaimToggle = (claim: string) => {
+    setSelectedClaims(prev => {
+      const next = new Set(prev);
+      if (next.has(claim)) {
+        next.delete(claim);
+      } else {
+        next.add(claim);
+      }
+      return next;
+    });
+  };
+
+  const handleGeneratePreview = async () => {
+    if (!observation || (selectedClaims.size === 0 && !additionalText.trim())) return;
+
     setIsProcessing(true);
-    await onSubmitInput(observation.id, userInput.trim());
-    setUserInput('');
+
+    if (onApplyClaims) {
+      await onApplyClaims(observation.id, Array.from(selectedClaims), additionalText);
+    } else {
+      // Fallback to old input method
+      const combinedInput = [...Array.from(selectedClaims), additionalText].filter(Boolean).join('\n');
+      await onSubmitInput(observation.id, combinedInput);
+    }
+
     setIsProcessing(false);
+    setLayer('preview');
   };
 
   const handleApply = () => {
     if (!observation?.rewrittenContent) return;
     onApply(observation.id, observation.rewrittenContent);
+    setLayer('nudge');
+    setSelectedClaims(new Set());
+    setAdditionalText('');
     setInternalExpanded(false);
   };
 
   const handleLock = () => {
     if (!observation) return;
     onLock(observation.id);
+    setLayer('nudge');
+    setSelectedClaims(new Set());
+    setAdditionalText('');
     setInternalExpanded(false);
   };
 
+  const handleBack = () => {
+    if (layer === 'preview') {
+      setLayer('assist');
+    } else if (layer === 'assist') {
+      setLayer('nudge');
+      setInternalExpanded(false);
+      onToggleExpand?.();
+    }
+  };
+
+  // Cycle sentence starter on focus
+  const handleTextareaFocus = () => {
+    if (guidedEdit?.sentenceStarters?.length) {
+      setStarterIndex(prev => prev + 1);
+    }
+  };
+
+  // Representation status label
+  const representationLabel = useMemo(() => {
+    if (!guidedEdit?.representationStatus) return null;
+    const labels = {
+      too_short: language === 'da' ? 'Repræsentation: for kort' : 'Representation: too short',
+      balanced: language === 'da' ? 'Repræsentation: balanceret' : 'Representation: balanced',
+      too_long: language === 'da' ? 'Repræsentation: for lang' : 'Representation: too long',
+    };
+    return labels[guidedEdit.representationStatus];
+  }, [guidedEdit?.representationStatus, language]);
+
   return (
     <div className="relative">
-      {/* Timeline dot - temperature colors allowed here */}
+      {/* Timeline dot - temperature colors */}
       <div
         className={cn(
           "absolute -left-8 top-6 w-3 h-3 rounded-full border-2 bg-white dark:bg-gray-900",
@@ -99,7 +189,7 @@ export function RoleCard({
         )}
       />
 
-      {/* Card - grey border with left-edge temperature accent */}
+      {/* Card */}
       <motion.div
         layout
         id={`section-${section.id}`}
@@ -108,7 +198,6 @@ export function RoleCard({
           "shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]",
           "hover:shadow-[0_4px_6px_rgba(0,0,0,0.05),0_2px_4px_rgba(0,0,0,0.04)]",
           "border-gray-200 dark:border-gray-700",
-          // Temperature-aware background + left edge
           isAccepted
             ? "bg-[#E8F5E8] dark:bg-[#1A1F1C] border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86]"
             : hasPendingSuggestion
@@ -151,25 +240,29 @@ export function RoleCard({
             })}
           </div>
 
-          {/* Suggestion Trigger - neutral grey text */}
-          {hasPendingSuggestion && (
-            <button
-              onClick={handleToggle}
-              className={cn(
-                "mt-4 flex items-center gap-2 text-sm font-medium transition-colors",
-                "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              )}
-            >
-              <Sparkles className="w-4 h-4 text-gray-400" />
-              <span>{t('complete.clickToView')}</span>
-              <ChevronDown className={cn(
-                "w-4 h-4 transition-transform",
-                isExpanded && "rotate-180"
-              )} />
-            </button>
+          {/* ========== LAYER 1: NUDGE ========== */}
+          {hasPendingSuggestion && layer === 'nudge' && !isExpanded && (
+            <div className="mt-4 space-y-2">
+              {/* Diagnostic message */}
+              <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                {observation.message}
+              </p>
+
+              {/* Single action button */}
+              <button
+                onClick={() => {
+                  handleToggle();
+                  handleImproveClick();
+                }}
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+              >
+                <ArrowRight className="w-4 h-4" />
+                <span>{language === 'da' ? 'Forbedr denne rolle' : 'Improve this role'}</span>
+              </button>
+            </div>
           )}
 
-          {/* Accepted indicator - neutral grey */}
+          {/* Accepted indicator */}
           {isAccepted && (
             <div className="mt-4 flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400">
               <Check className="w-4 h-4" />
@@ -178,9 +271,100 @@ export function RoleCard({
           )}
         </div>
 
-        {/* Inline Suggestion Panel */}
+        {/* ========== LAYER 2: ASSIST ========== */}
         <AnimatePresence>
-          {isExpanded && hasPendingSuggestion && observation && (
+          {isExpanded && hasPendingSuggestion && observation && layer === 'assist' && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="overflow-hidden"
+            >
+              <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-5 space-y-4">
+                {/* Representation status */}
+                {representationLabel && guidedEdit?.representationStatus !== 'balanced' && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {representationLabel}
+                  </div>
+                )}
+
+                {/* Claim Blocks */}
+                {guidedEdit?.claimBlocks && guidedEdit.claimBlocks.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      {language === 'da' ? 'Foreslåede elementer (klik for at tilføje)' : 'Suggested elements (click to add)'}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {guidedEdit.claimBlocks.map((claim, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleClaimToggle(claim)}
+                          className={cn(
+                            "px-3 py-1.5 text-sm rounded-full border transition-all",
+                            selectedClaims.has(claim)
+                              ? "bg-[#E8F5E8] dark:bg-[#1A2F1C] border-green-300 dark:border-green-700 text-green-800 dark:text-green-300"
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
+                          )}
+                        >
+                          {selectedClaims.has(claim) && <Check className="w-3 h-3 inline mr-1" />}
+                          {claim}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional text input with sentence starter */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {language === 'da' ? 'Tilføj dine egne detaljer (valgfrit)' : 'Add your own details (optional)'}
+                  </label>
+                  <textarea
+                    value={additionalText}
+                    onChange={(e) => setAdditionalText(e.target.value)}
+                    onFocus={handleTextareaFocus}
+                    placeholder={currentStarter}
+                    className="w-full p-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 placeholder:italic"
+                    rows={3}
+                    disabled={isProcessing}
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 justify-end pt-2">
+                  <button
+                    onClick={handleBack}
+                    className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    {t('complete.back')}
+                  </button>
+                  <button
+                    onClick={handleGeneratePreview}
+                    disabled={selectedClaims.size === 0 && !additionalText.trim() || isProcessing}
+                    className="px-4 py-2 text-sm font-medium bg-[#1a3a2a] text-white rounded-lg hover:bg-[#2a4a3a] transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {language === 'da' ? 'Genererer...' : 'Generating...'}
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" />
+                        {language === 'da' ? 'Generer forslag' : 'Generate suggestion'}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ========== PREVIEW (post-assist) ========== */}
+        <AnimatePresence>
+          {isExpanded && hasPendingSuggestion && observation && layer === 'preview' && observation.rewrittenContent && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -188,83 +372,37 @@ export function RoleCard({
               transition={{ duration: 0.15, ease: 'easeOut' }}
               className="overflow-hidden"
             >
-              <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-5">
-                {/* Observation message - neutral grey icon */}
-                <div className="flex gap-3 mb-4">
-                  <Sparkles className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {observation.message}
+              <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-5 space-y-4">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {t('complete.suggestedChange')}
+                </label>
+                <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86] rounded-lg">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {observation.rewrittenContent}
                   </p>
                 </div>
-
-                {/* Add Info: Input needed */}
-                {observation.actionType === 'add_info' && !observation.rewrittenContent && (
-                  <div className="space-y-3">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {observation.inputPrompt}
-                    </label>
-                    <textarea
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      placeholder={t('input.placeholder')}
-                      className="w-full p-3 text-sm border border-gray-200 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                      rows={3}
-                      disabled={isProcessing}
-                    />
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => setInternalExpanded(false)}
-                        className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        {t('complete.back')}
-                      </button>
-                      <button
-                        onClick={handleSubmit}
-                        disabled={!userInput.trim() || isProcessing}
-                        className="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                      >
-                        {isProcessing ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            {t('processing')}
-                          </>
-                        ) : (
-                          t('submit')
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Rewrite or Add Info with generated content: Show preview */}
-                {observation.rewrittenContent && (
-                  <div className="space-y-3">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {t('complete.suggestedChange')}
-                    </label>
-                    <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-l-4 border-l-[#D7F1D6] dark:border-l-[#7BAF86] rounded-lg">
-                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                        {observation.rewrittenContent}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={handleLock}
-                        className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 border border-gray-200 dark:border-gray-600"
-                      >
-                        <Lock className="w-4 h-4" />
-                        {t('complete.lock')}
-                      </button>
-                      <button
-                        onClick={handleApply}
-                        className="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
-                      >
-                        <Check className="w-4 h-4" />
-                        {t('complete.apply')}
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={handleBack}
+                    className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    {language === 'da' ? 'Tilbage' : 'Back'}
+                  </button>
+                  <button
+                    onClick={handleLock}
+                    className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 border border-gray-200 dark:border-gray-600"
+                  >
+                    <Lock className="w-4 h-4" />
+                    {t('complete.lock')}
+                  </button>
+                  <button
+                    onClick={handleApply}
+                    className="px-4 py-2 text-sm font-medium bg-[#1a3a2a] text-white rounded-lg hover:bg-[#2a4a3a] transition-colors flex items-center gap-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    {t('complete.apply')}
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}

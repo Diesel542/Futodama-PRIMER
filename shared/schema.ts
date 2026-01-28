@@ -34,7 +34,7 @@ export interface CVSection {
 // ============================================
 
 export type ObservationType = 'density' | 'temporal' | 'structural';
-export type ActionType = 'rewrite' | 'add_info';
+export type ActionType = 'rewrite' | 'add_info' | 'guided_edit';
 export type ObservationStatus = 'pending' | 'awaiting_input' | 'processing' | 'accepted' | 'declined' | 'locked';
 
 export interface Observation {
@@ -47,11 +47,26 @@ export interface Observation {
 
   // Action fields
   actionType: ActionType;
-  inputPrompt?: string;       // Question to ask user (for add_info)
-  proposal?: string;          // Description of what will change
-  rewrittenContent?: string;  // The actual new content to apply
+  inputPrompt?: string;          // Legacy: Question to ask user
+  proposal?: string;             // Description of what will change
+  rewrittenContent?: string;     // The actual new content to apply
 
   status: ObservationStatus;
+
+  // Guided editing (Layer 2)
+  guidedEdit?: GuidedEditContext;
+}
+
+// ============================================
+// GUIDED EDIT CONTEXT
+// ============================================
+
+export type RepresentationStatus = 'too_short' | 'balanced' | 'too_long';
+
+export interface GuidedEditContext {
+  claimBlocks: string[];              // Suggested elements as click-to-add pills
+  sentenceStarters: string[];         // Rotating placeholder prompts
+  representationStatus: RepresentationStatus;
 }
 
 // ============================================

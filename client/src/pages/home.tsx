@@ -452,6 +452,39 @@ export default function Home() {
     ));
   };
 
+  const handleApplyClaims = async (observationId: string, selectedClaims: string[], additionalText: string) => {
+    const obs = observations.find(o => o.id === observationId);
+    if (!obs || !cvData) return;
+
+    const section = cvData.sections.find(s => s.id === obs.sectionId);
+    if (!section) return;
+
+    const response = await fetch('/api/cv/apply-claims', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Language': language,
+        'X-Model': model,
+      },
+      body: JSON.stringify({
+        sectionId: obs.sectionId,
+        selectedClaims,
+        additionalText,
+        section,
+      }),
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    setObservations(prev => prev.map(o =>
+      o.id === observationId
+        ? { ...o, rewrittenContent: data.rewrittenContent }
+        : o
+    ));
+  };
+
   // Render section group with timeline
   const renderSectionGroup = (title: string, sections: CVSection[]) => {
     if (sections.length === 0) return null;
@@ -483,6 +516,7 @@ export default function Home() {
                   onApply={handleApply}
                   onLock={handleLock}
                   onSubmitInput={handleSubmitInput}
+                  onApplyClaims={handleApplyClaims}
                   t={t}
                   language={language}
                 />

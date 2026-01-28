@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { CVSection } from '@shared/schema';
+import { CVSection, RepresentationStatus } from '@shared/schema';
 import { loadPrompt } from '../codex';
 
 /**
@@ -481,4 +481,175 @@ export async function generateFromUserInput(
   }
 
   return text.text.trim();
+}
+
+// ============================================
+// GUIDED EDITING: CLAIM BLOCKS
+// ============================================
+
+const CLAIM_BLOCKS_SYSTEM_PROMPT_EN = `You generate suggested role elements for CV improvement.
+
+CRITICAL CONSTRAINTS:
+- Generate 4-6 short, professional claim phrases
+- Each claim should be 5-10 words maximum
+- Claims should be realistic for the role type
+- Use active voice, start with verbs where appropriate
+- Do NOT include specific numbers or metrics
+- Claims should be generic enough to apply but specific enough to inspire
+- Output ONLY a JSON array of strings, nothing else
+
+EXAMPLES for a CEO role:
+["Led strategic initiatives for enterprise clients", "Managed cross-functional leadership teams", "Drove business development and partnerships", "Owned P&L responsibility", "Built and scaled organizational capabilities"]`;
+
+const CLAIM_BLOCKS_SYSTEM_PROMPT_DA = `Du genererer foreslåede rolleelementer til CV-forbedring.
+
+KRITISKE BEGRÆNSNINGER:
+- Generer 4-6 korte, professionelle påstandsfraser
+- Hver påstand skal være maksimalt 5-10 ord
+- Påstande skal være realistiske for rolletypen
+- Brug aktiv stemme, start med verber hvor det er passende
+- Inkluder IKKE specifikke tal eller målinger
+- Påstande skal være generiske nok til at gælde, men specifikke nok til at inspirere
+- Output KUN et JSON-array af strenge, intet andet
+
+EKSEMPLER for en CEO-rolle:
+["Ledte strategiske initiativer for erhvervskunder", "Styrede tværfunktionelle ledelsesteams", "Drev forretningsudvikling og partnerskaber", "Havde P&L-ansvar", "Byggede og skalerede organisatoriske kapabiliteter"]`;
+
+export async function generateClaimBlocks(
+  section: CVSection,
+  signal: string,
+  language: string = 'en',
+  model: string = 'claude-sonnet-4-20250514'
+): Promise<string[]> {
+  const isDanish = language === 'da';
+  const systemPrompt = isDanish ? CLAIM_BLOCKS_SYSTEM_PROMPT_DA : CLAIM_BLOCKS_SYSTEM_PROMPT_EN;
+
+  const prompt = isDanish
+    ? `Rolle: ${section.title}
+Organisation: ${section.organization || 'Ikke angivet'}
+Nuværende indhold: "${section.content.substring(0, 200)}..."
+Problem: ${signal}
+
+Generer 4-6 foreslåede rolleelementer, der kunne tilføjes til denne sektion.`
+    : `Role: ${section.title}
+Organization: ${section.organization || 'Not specified'}
+Current content: "${section.content.substring(0, 200)}..."
+Issue: ${signal}
+
+Generate 4-6 suggested role elements that could be added to this section.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: model,
+      max_tokens: 300,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const text = response.content[0];
+    if (text.type !== 'text') {
+      throw new Error('Unexpected response type');
+    }
+
+    // Parse JSON array from response
+    const parsed = JSON.parse(text.text.trim());
+    if (Array.isArray(parsed)) {
+      return parsed.slice(0, 6); // Limit to 6 max
+    }
+    return [];
+  } catch (error) {
+    console.error('Failed to generate claim blocks:', error);
+    // Fallback to generic claims
+    return isDanish
+      ? ['Ledte nøgleinitiativer', 'Samarbejdede med interessenter', 'Leverede målbare resultater', 'Drev procesforbedringer']
+      : ['Led key initiatives', 'Collaborated with stakeholders', 'Delivered measurable results', 'Drove process improvements'];
+  }
+}
+
+// ============================================
+// GUIDED EDITING: SENTENCE STARTERS
+// ============================================
+
+export function getSentenceStarters(signal: string, language: string = 'en'): string[] {
+  const isDanish = language === 'da';
+
+  const starters: Record<string, { en: string[]; da: string[] }> = {
+    sparse_density: {
+      en: [
+        'Led ___ initiatives resulting in ___',
+        'Managed a team of ___ responsible for ___',
+        'Delivered ___ by implementing ___',
+        'Drove ___ growth through ___',
+      ],
+      da: [
+        'Ledte ___ initiativer, der resulterede i ___',
+        'Styrede et team på ___ med ansvar for ___',
+        'Leverede ___ ved at implementere ___',
+        'Drev ___ vækst gennem ___',
+      ],
+    },
+    missing_metrics: {
+      en: [
+        'Achieved ___% improvement in ___',
+        'Reduced ___ by ___ through ___',
+        'Increased ___ from ___ to ___',
+        'Managed budget of $___ for ___',
+      ],
+      da: [
+        'Opnåede ___% forbedring i ___',
+        'Reducerede ___ med ___ gennem ___',
+        'Øgede ___ fra ___ til ___',
+        'Administrerede budget på ___ kr. til ___',
+      ],
+    },
+    missing_outcomes: {
+      en: [
+        'Successfully delivered ___ resulting in ___',
+        'Transformed ___ which led to ___',
+        'Achieved ___ by ___',
+      ],
+      da: [
+        'Leverede succesfuldt ___, hvilket resulterede i ___',
+        'Transformerede ___, hvilket førte til ___',
+        'Opnåede ___ ved at ___',
+      ],
+    },
+    missing_team_context: {
+      en: [
+        'Led a team of ___ across ___',
+        'Managed ___ direct reports including ___',
+        'Built and scaled team from ___ to ___',
+      ],
+      da: [
+        'Ledte et team på ___ på tværs af ___',
+        'Styrede ___ direkte rapporter inklusiv ___',
+        'Byggede og skalerede team fra ___ til ___',
+      ],
+    },
+  };
+
+  const defaultStarters = {
+    en: ['Contributed to ___ by ___', 'Responsible for ___ including ___'],
+    da: ['Bidrog til ___ ved at ___', 'Ansvarlig for ___ inklusiv ___'],
+  };
+
+  const signalStarters = starters[signal] || defaultStarters;
+  return isDanish ? signalStarters.da : signalStarters.en;
+}
+
+// ============================================
+// REPRESENTATION STATUS
+// ============================================
+
+export function calculateRepresentationStatus(
+  wordCount: number,
+  durationMonths: number
+): RepresentationStatus {
+  if (!durationMonths || durationMonths === 0) return 'balanced';
+
+  const wordsPerMonth = wordCount / durationMonths;
+
+  if (wordsPerMonth < 5) return 'too_short';
+  if (wordsPerMonth > 25) return 'too_long';
+  return 'balanced';
 }
