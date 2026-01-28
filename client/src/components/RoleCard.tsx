@@ -91,6 +91,7 @@ export function RoleCard({
   // Layer 3 state
   const [showPowerTools, setShowPowerTools] = useState(false);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+  const [selectedOutcomes, setSelectedOutcomes] = useState<Set<string>>(new Set());
 
   const handleToggle = () => {
     if (onToggleExpand) {
@@ -101,6 +102,7 @@ export function RoleCard({
     if (isExpanded) {
       setLayer('nudge');
       setSelectedClaims(new Set());
+      setSelectedOutcomes(new Set());
       setAdditionalText('');
       setShowPowerTools(false);
     }
@@ -140,20 +142,29 @@ export function RoleCard({
   };
 
   const handleGeneratePreview = async () => {
-    if (!observation || (selectedClaims.size === 0 && !additionalText.trim())) return;
+    if (!observation || (selectedClaims.size === 0 && selectedOutcomes.size === 0 && !additionalText.trim())) return;
 
     setIsProcessing(true);
 
-    // Filter out unfilled placeholders
+    // Filter out unfilled placeholders from claims
     const cleanedClaims = Array.from(selectedClaims).filter(claim => !claim.includes('___'));
+
+    // Get scaffold text for selected outcomes (these will be completed by AI)
+    const outcomeScaffolds = OUTCOME_PICKERS
+      .filter(p => selectedOutcomes.has(p.category))
+      .map(p => p.scaffold[language as 'en' | 'da'] || p.scaffold.en);
+
+    // Combine claims with outcome scaffolds
+    const allClaims = [...cleanedClaims, ...outcomeScaffolds];
+
     const cleanedText = additionalText.includes('___')
       ? additionalText.split('\n').filter(line => !line.includes('___')).join('\n')
       : additionalText;
 
     if (onApplyClaims) {
-      await onApplyClaims(observation.id, cleanedClaims, cleanedText);
+      await onApplyClaims(observation.id, allClaims, cleanedText);
     } else {
-      const combinedInput = [...cleanedClaims, cleanedText].filter(Boolean).join('\n');
+      const combinedInput = [...allClaims, cleanedText].filter(Boolean).join('\n');
       await onSubmitInput(observation.id, combinedInput);
     }
 
@@ -169,12 +180,15 @@ export function RoleCard({
     setLayer('preview');
   };
 
-  const handleOutcomeSelect = (scaffold: string) => {
-    setAdditionalText(prev => {
-      if (prev.trim()) {
-        return prev + '\n' + scaffold;
+  const handleOutcomeToggle = (category: string) => {
+    setSelectedOutcomes(prev => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
       }
-      return scaffold;
+      return next;
     });
   };
 
@@ -183,6 +197,7 @@ export function RoleCard({
     onApply(observation.id, observation.rewrittenContent);
     setLayer('nudge');
     setSelectedClaims(new Set());
+    setSelectedOutcomes(new Set());
     setAdditionalText('');
     setInternalExpanded(false);
   };
@@ -192,6 +207,7 @@ export function RoleCard({
     onLock(observation.id);
     setLayer('nudge');
     setSelectedClaims(new Set());
+    setSelectedOutcomes(new Set());
     setAdditionalText('');
     setInternalExpanded(false);
   };
@@ -321,7 +337,7 @@ export function RoleCard({
                   {observation.message}
                 </p>
 
-                {/* Claim Blocks - discovery-style, not buttons */}
+                {/* Claim Blocks - visible as selectable tags */}
                 {guidedEdit?.claimBlocks && guidedEdit.claimBlocks.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {guidedEdit.claimBlocks.map((claim, i) => (
@@ -329,16 +345,11 @@ export function RoleCard({
                         key={i}
                         onClick={() => handleClaimToggle(claim)}
                         className={cn(
-                          "px-3 py-2 text-sm rounded-lg transition-all duration-150",
+                          "px-3 py-2 text-sm rounded-lg transition-all duration-150 border",
                           selectedClaims.has(claim)
-                            ? "bg-[#E8F5E8] dark:bg-[#1A2F1C] text-gray-800 dark:text-gray-200"
-                            : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                            ? "bg-[#E8F5E8] dark:bg-[#1A2F1C] border-green-200 dark:border-green-800 text-gray-800 dark:text-gray-200"
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
                         )}
-                        style={{
-                          boxShadow: selectedClaims.has(claim)
-                            ? 'none'
-                            : '0 1px 2px rgba(0,0,0,0.04)'
-                        }}
                       >
                         {selectedClaims.has(claim) && (
                           <Check className="w-3.5 h-3.5 inline mr-1.5 text-green-600 dark:text-green-500" />
@@ -371,16 +382,25 @@ export function RoleCard({
                       className="overflow-hidden"
                     >
                       <div className="pt-2 space-y-4">
-                        {/* Outcome pickers - minimal tokens */}
+                        {/* Outcome pickers - selectable tags like claim blocks */}
                         <div className="flex flex-wrap gap-2">
                           {OUTCOME_PICKERS.map((picker) => {
                             const Icon = picker.icon;
+                            const isSelected = selectedOutcomes.has(picker.category);
                             return (
                               <button
                                 key={picker.category}
-                                onClick={() => handleOutcomeSelect(picker.scaffold[language as 'en' | 'da'] || picker.scaffold.en)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                                onClick={() => handleOutcomeToggle(picker.category)}
+                                className={cn(
+                                  "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-all duration-150 border",
+                                  isSelected
+                                    ? "bg-[#E8F5E8] dark:bg-[#1A2F1C] border-green-200 dark:border-green-800 text-gray-700 dark:text-gray-300"
+                                    : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
+                                )}
                               >
+                                {isSelected && (
+                                  <Check className="w-3 h-3 text-green-600 dark:text-green-500" />
+                                )}
                                 <Icon className="w-3.5 h-3.5" />
                                 <span>{picker.label[language as 'en' | 'da'] || picker.label.en}</span>
                               </button>
@@ -431,7 +451,7 @@ export function RoleCard({
                     {/* One primary action */}
                     <button
                       onClick={handleGeneratePreview}
-                      disabled={selectedClaims.size === 0 && !additionalText.trim() || isProcessing}
+                      disabled={(selectedClaims.size === 0 && selectedOutcomes.size === 0 && !additionalText.trim()) || isProcessing}
                       className="px-5 py-2 text-sm font-medium bg-[#1a3a2a] text-white rounded-lg hover:bg-[#2a4a3a] transition-colors disabled:opacity-40 flex items-center gap-2"
                     >
                       {isProcessing ? (
