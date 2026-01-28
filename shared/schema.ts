@@ -70,6 +70,41 @@ export interface GuidedEditContext {
 }
 
 // ============================================
+// OUTCOME PICKERS (Layer 3)
+// ============================================
+
+export type OutcomeCategory = 'revenue' | 'positioning' | 'team_growth' | 'delivery';
+
+export interface OutcomePicker {
+  category: OutcomeCategory;
+  label: { en: string; da: string };
+  scaffold: { en: string; da: string };
+}
+
+export const OUTCOME_PICKERS: OutcomePicker[] = [
+  {
+    category: 'revenue',
+    label: { en: 'Revenue impact', da: 'Omsætningseffekt' },
+    scaffold: { en: 'Contributed to revenue growth by ___', da: 'Bidrog til omsætningsvækst ved ___' },
+  },
+  {
+    category: 'positioning',
+    label: { en: 'Market positioning', da: 'Markedspositionering' },
+    scaffold: { en: 'Strengthened market position through ___', da: 'Styrkede markedsposition gennem ___' },
+  },
+  {
+    category: 'team_growth',
+    label: { en: 'Team growth', da: 'Teamvækst' },
+    scaffold: { en: 'Built and developed team capabilities in ___', da: 'Opbyggede og udviklede teamkompetencer inden for ___' },
+  },
+  {
+    category: 'delivery',
+    label: { en: 'Delivery performance', da: 'Leveringsperformance' },
+    scaffold: { en: 'Improved delivery outcomes by ___', da: 'Forbedrede leveringsresultater ved ___' },
+  },
+];
+
+// ============================================
 // CV (ROOT OBJECT)
 // ============================================
 

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { cvStorage } from "./storage";
 import { parseWithLLM } from "./engine/llm-parser";
 import { generateObservations, createObservation, identifyStrengths } from "./engine/observationGenerator";
-import { phraseObservation, generateProposal, rewriteSection, phraseStrengths, generateCodexRewrite, generateFromUserInput, generateClaimBlocks, getSentenceStarters, calculateRepresentationStatus } from "./llm/claude";
+import { phraseObservation, generateProposal, rewriteSection, phraseStrengths, generateCodexRewrite, generateFromUserInput, generateClaimBlocks, getSentenceStarters, calculateRepresentationStatus, generateGardenerDraft } from "./llm/claude";
 import { getActionForSignal } from './codex';
 import { PARSE_THRESHOLDS } from "./engine/thresholds";
 import {
@@ -389,6 +389,38 @@ export async function registerRoutes(
       console.error("Apply claims error:", error);
       res.status(500).json({
         error: "Failed to apply claims",
+        code: "ANALYSIS_FAILED"
+      } as ErrorResponse);
+    }
+  });
+
+  // ============================================
+  // POST /api/cv/gardener-draft
+  // ============================================
+  app.post("/api/cv/gardener-draft", async (req, res) => {
+    try {
+      const { sectionId, section } = req.body;
+      const language = (req.headers['x-language'] as string) || 'en';
+      const model = (req.headers['x-model'] as string) || 'claude-sonnet-4-20250514';
+
+      if (!sectionId || !section) {
+        return res.status(400).json({
+          error: "Missing required fields",
+          code: "PARSE_FAILED"
+        } as ErrorResponse);
+      }
+
+      const rewrittenContent = await generateGardenerDraft(section, language, model);
+
+      res.json({
+        sectionId,
+        rewrittenContent,
+      });
+
+    } catch (error) {
+      console.error("Gardener draft error:", error);
+      res.status(500).json({
+        error: "Failed to generate gardener draft",
         code: "ANALYSIS_FAILED"
       } as ErrorResponse);
     }

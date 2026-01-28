@@ -1,7 +1,34 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check, Lock, Loader2, ArrowRight, Plus } from 'lucide-react';
+import { ChevronDown, Check, Lock, Loader2, ArrowRight, Plus, Wand2, TrendingUp, Target, Users, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const OUTCOME_PICKERS = [
+  {
+    category: 'revenue' as const,
+    icon: TrendingUp,
+    label: { en: 'Revenue impact', da: 'Omsætningseffekt' },
+    scaffold: { en: 'Contributed to revenue growth by ___', da: 'Bidrog til omsætningsvækst ved ___' },
+  },
+  {
+    category: 'positioning' as const,
+    icon: Target,
+    label: { en: 'Market positioning', da: 'Markedspositionering' },
+    scaffold: { en: 'Strengthened market position through ___', da: 'Styrkede markedsposition gennem ___' },
+  },
+  {
+    category: 'team_growth' as const,
+    icon: Users,
+    label: { en: 'Team growth', da: 'Teamvækst' },
+    scaffold: { en: 'Built and developed team capabilities in ___', da: 'Opbyggede og udviklede teamkompetencer inden for ___' },
+  },
+  {
+    category: 'delivery' as const,
+    icon: Package,
+    label: { en: 'Delivery performance', da: 'Leveringsperformance' },
+    scaffold: { en: 'Improved delivery outcomes by ___', da: 'Forbedrede leveringsresultater ved ___' },
+  },
+];
 
 type EditingLayer = 'nudge' | 'assist' | 'preview';
 
@@ -33,6 +60,7 @@ interface RoleCardProps {
   onLock: (observationId: string) => void;
   onSubmitInput: (observationId: string, input: string) => Promise<void>;
   onApplyClaims?: (observationId: string, selectedClaims: string[], additionalText: string) => Promise<void>;
+  onRequestGardenerDraft?: (observationId: string) => Promise<void>;
   t: (key: string) => string;
   language: string;
 }
@@ -46,6 +74,7 @@ export function RoleCard({
   onLock,
   onSubmitInput,
   onApplyClaims,
+  onRequestGardenerDraft,
   t,
   language
 }: RoleCardProps) {
@@ -63,6 +92,10 @@ export function RoleCard({
 
   // Current sentence starter index
   const [starterIndex, setStarterIndex] = useState(0);
+
+  // Layer 3 state
+  const [showPowerTools, setShowPowerTools] = useState(false);
+  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
 
   const handleToggle = () => {
     if (onToggleExpand) {
@@ -162,6 +195,30 @@ export function RoleCard({
     if (guidedEdit?.sentenceStarters?.length) {
       setStarterIndex(prev => prev + 1);
     }
+  };
+
+  // Layer 3: Gardener Draft handler
+  const handleGardenerDraft = async () => {
+    if (!observation || !onRequestGardenerDraft) return;
+
+    setIsGeneratingDraft(true);
+    try {
+      await onRequestGardenerDraft(observation.id);
+      setLayer('preview');
+    } finally {
+      setIsGeneratingDraft(false);
+    }
+  };
+
+  // Layer 3: Outcome picker handler
+  const handleOutcomeSelect = (scaffold: string) => {
+    // Insert scaffold at cursor or append to additional text
+    setAdditionalText(prev => {
+      if (prev.trim()) {
+        return prev + '\n' + scaffold;
+      }
+      return scaffold;
+    });
   };
 
   // Representation status label
@@ -329,6 +386,85 @@ export function RoleCard({
                     rows={3}
                     disabled={isProcessing}
                   />
+                </div>
+
+                {/* Layer 3: Power Tools */}
+                <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                  <button
+                    onClick={() => setShowPowerTools(!showPowerTools)}
+                    className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  >
+                    <ChevronDown className={cn(
+                      "w-3 h-3 transition-transform",
+                      showPowerTools && "rotate-180"
+                    )} />
+                    {showPowerTools
+                      ? (language === 'da' ? 'Skjul power tools' : 'Hide power tools')
+                      : (language === 'da' ? 'Vis power tools' : 'Show power tools')
+                    }
+                  </button>
+
+                  <AnimatePresence>
+                    {showPowerTools && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-4 space-y-4">
+                          {/* Outcome Pickers */}
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                              {language === 'da' ? 'Udfaldsskabeloner' : 'Outcome scaffolds'}
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {OUTCOME_PICKERS.map((picker) => {
+                                const Icon = picker.icon;
+                                return (
+                                  <button
+                                    key={picker.category}
+                                    onClick={() => handleOutcomeSelect(picker.scaffold[language as 'en' | 'da'] || picker.scaffold.en)}
+                                    className="flex items-center gap-2 px-3 py-2 text-xs text-left rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                  >
+                                    <Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-gray-700 dark:text-gray-300">
+                                      {picker.label[language as 'en' | 'da'] || picker.label.en}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Gardener Draft */}
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                              {language === 'da' ? 'AI-udkast' : 'AI draft'}
+                            </label>
+                            <button
+                              onClick={handleGardenerDraft}
+                              disabled={isGeneratingDraft || !onRequestGardenerDraft}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                            >
+                              {isGeneratingDraft ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  {language === 'da' ? 'Genererer udkast...' : 'Generating draft...'}
+                                </>
+                              ) : (
+                                <>
+                                  <Wand2 className="w-4 h-4 text-gray-400" />
+                                  {language === 'da' ? 'Lad AI skrive et udkast' : 'Let AI write a draft'}
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Actions */}
