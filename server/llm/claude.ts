@@ -757,3 +757,107 @@ export function calculateRepresentationStatus(
   if (wordsPerMonth > 25) return 'too_long';
   return 'balanced';
 }
+
+// ============================================
+// CONTEXTUAL LABELS (replacing diagnostic sentences)
+// ============================================
+
+export type ContextualLabelType =
+  | 'earlier_career'
+  | 'foundational'
+  | 'transitional'
+  | 'advisory'
+  | 'brief_tenure'
+  | 'current'
+  | 'recent'
+  | null;
+
+interface ContextualLabelResult {
+  labelType: ContextualLabelType;
+  label: {
+    en: string;
+    da: string;
+  } | null;
+}
+
+const CONTEXTUAL_LABELS: Record<Exclude<ContextualLabelType, null>, { en: string; da: string }> = {
+  earlier_career: { en: 'Earlier career role', da: 'Tidligere karriererolle' },
+  foundational: { en: 'Foundational role', da: 'Grundlæggende rolle' },
+  transitional: { en: 'Transitional role', da: 'Overgangsrolle' },
+  advisory: { en: 'Advisory role', da: 'Rådgivende rolle' },
+  brief_tenure: { en: 'Brief engagement', da: 'Kort engagement' },
+  current: { en: 'Current role', da: 'Nuværende rolle' },
+  recent: { en: 'Recent role', da: 'Nylig rolle' },
+};
+
+export function generateContextualLabel(
+  section: {
+    startDate?: string;
+    endDate?: string;
+    duration?: number;
+    title?: string;
+    type?: string;
+  },
+  allSections: Array<{ startDate?: string; endDate?: string; type?: string }>,
+  currentDate: Date = new Date()
+): ContextualLabelResult {
+  // Only generate labels for job sections
+  if (section.type !== 'job') {
+    return { labelType: null, label: null };
+  }
+
+  const endDate = section.endDate ? new Date(section.endDate) : null;
+  const duration = section.duration || 0;
+  const title = section.title?.toLowerCase() || '';
+
+  // Check if this is an advisory/board role
+  if (title.includes('advisor') || title.includes('rådgiver') ||
+      title.includes('board') || title.includes('bestyrelse') ||
+      title.includes('advisory') || title.includes('mentor')) {
+    return { labelType: 'advisory', label: CONTEXTUAL_LABELS.advisory };
+  }
+
+  // Check if current role (no end date or end date is recent)
+  const isOngoing = !endDate || endDate.toISOString().includes(currentDate.getFullYear().toString());
+  if (isOngoing) {
+    return { labelType: 'current', label: CONTEXTUAL_LABELS.current };
+  }
+
+  // Calculate how long ago the role ended
+  const monthsAgo = endDate
+    ? Math.floor((currentDate.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24 * 30))
+    : 0;
+
+  // Recent role (ended within last 2 years)
+  if (monthsAgo <= 24) {
+    return { labelType: 'recent', label: CONTEXTUAL_LABELS.recent };
+  }
+
+  // Brief engagement (less than 6 months)
+  if (duration > 0 && duration < 6) {
+    return { labelType: 'brief_tenure', label: CONTEXTUAL_LABELS.brief_tenure };
+  }
+
+  // Find the chronological position among job sections
+  const jobSections = allSections
+    .filter(s => s.type === 'job' && s.startDate)
+    .sort((a, b) => new Date(b.startDate!).getTime() - new Date(a.startDate!).getTime());
+
+  const totalJobs = jobSections.length;
+  const thisJobIndex = jobSections.findIndex(s =>
+    s.startDate === section.startDate && s.endDate === section.endDate
+  );
+
+  // Earlier career (in the older half of job history, more than 5 years ago)
+  if (monthsAgo > 60 || (totalJobs > 4 && thisJobIndex >= totalJobs / 2)) {
+    return { labelType: 'earlier_career', label: CONTEXTUAL_LABELS.earlier_career };
+  }
+
+  // Transitional (short-ish role between longer ones)
+  if (duration > 0 && duration < 18 && totalJobs > 2) {
+    return { labelType: 'transitional', label: CONTEXTUAL_LABELS.transitional };
+  }
+
+  // No label needed for typical mid-career roles
+  return { labelType: null, label: null };
+}

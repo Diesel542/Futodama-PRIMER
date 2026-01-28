@@ -7,7 +7,7 @@ import { extractText } from "./engine/text-extractor";
 import { cvStorage } from "./storage";
 import { parseWithLLM } from "./engine/llm-parser";
 import { generateObservations, createObservation, identifyStrengths } from "./engine/observationGenerator";
-import { phraseObservation, generateProposal, rewriteSection, phraseStrengths, generateCodexRewrite, generateFromUserInput, generateClaimBlocks, getSentenceStarters, calculateRepresentationStatus, generateGardenerDraft } from "./llm/claude";
+import { phraseObservation, generateProposal, rewriteSection, phraseStrengths, generateCodexRewrite, generateFromUserInput, generateClaimBlocks, getSentenceStarters, calculateRepresentationStatus, generateGardenerDraft, generateContextualLabel } from "./llm/claude";
 import { getActionForSignal } from './codex';
 import { PARSE_THRESHOLDS } from "./engine/thresholds";
 import {
@@ -182,7 +182,15 @@ export async function registerRoutes(
 
           // Use guided_edit as primary action type
           const obs = createObservation(raw, message, proposal, 'guided_edit', inputPrompt, rewrittenContent, guidedEdit);
-          console.log(`Created observation: ${obs.id} for section ${obs.sectionId} (${obs.guidedEdit?.claimBlocks?.length || 0} claim blocks)`);
+
+          // Generate contextual label for the section
+          if (section) {
+            const labelResult = generateContextualLabel(section, parseResult.sections);
+            obs.contextualLabel = labelResult.label;
+            obs.contextualLabelType = labelResult.labelType;
+          }
+
+          console.log(`Created observation: ${obs.id} for section ${obs.sectionId} (${obs.guidedEdit?.claimBlocks?.length || 0} claim blocks, label: ${obs.contextualLabelType || 'none'})`);
           return obs;
         })
       );
