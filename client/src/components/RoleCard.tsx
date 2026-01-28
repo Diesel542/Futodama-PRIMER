@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Lock, Loader2, ArrowRight, Wand2, TrendingUp, Target, Users, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -92,6 +92,17 @@ export function RoleCard({
   const [showPowerTools, setShowPowerTools] = useState(false);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [selectedOutcomes, setSelectedOutcomes] = useState<Set<string>>(new Set());
+
+  // Reset layer state when card is closed externally
+  useEffect(() => {
+    if (!isExpanded && layer !== 'nudge') {
+      setLayer('nudge');
+      setSelectedClaims(new Set());
+      setSelectedOutcomes(new Set());
+      setAdditionalText('');
+      setShowPowerTools(false);
+    }
+  }, [isExpanded]);
 
   const handleToggle = () => {
     if (onToggleExpand) {
