@@ -551,8 +551,17 @@ Generate 4-6 suggested role elements that could be added to this section.`;
       throw new Error('Unexpected response type');
     }
 
-    // Parse JSON array from response
-    const parsed = JSON.parse(text.text.trim());
+    // Parse JSON array from response (handle potential markdown wrapping)
+    let jsonText = text.text.trim();
+
+    // Strip markdown code fences if present
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```\n?/, '').replace(/\n?```$/, '');
+    }
+
+    const parsed = JSON.parse(jsonText);
     if (Array.isArray(parsed)) {
       return parsed.slice(0, 6); // Limit to 6 max
     }

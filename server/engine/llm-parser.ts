@@ -73,12 +73,14 @@ Return a JSON object with this structure:
 }`;
 
   try {
+    console.log(`LLM Parser: Starting parse with model ${model}, text length: ${truncatedText.length}`);
     const response = await anthropic.messages.create({
       model: model,
       max_tokens: 4000,
       system: PARSER_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],
     });
+    console.log(`LLM Parser: Got response, stop_reason: ${response.stop_reason}`);
 
     const text = response.content[0];
     if (text.type !== 'text') {
@@ -95,7 +97,8 @@ Return a JSON object with this structure:
         .trim();
       parsed = JSON.parse(cleanJson);
     } catch (jsonError) {
-      console.error('Failed to parse LLM response as JSON:', text.text);
+      console.error('Failed to parse LLM response as JSON:', text.text.substring(0, 500));
+      console.error('JSON parse error:', jsonError);
       warnings.push('LLM response was not valid JSON, falling back to basic parsing');
       return fallbackParse(rawText, warnings);
     }
@@ -190,6 +193,7 @@ function calculateMonthsDifference(start: string, end: string): number {
 
 function fallbackParse(rawText: string, warnings: string[]): ParseResult {
   // Simple fallback: treat entire text as one section
+  console.warn('FALLBACK PARSER TRIGGERED - warnings:', warnings);
   warnings.push('Using fallback parser - CV structure could not be determined');
 
   const wordCount = rawText.split(/\s+/).filter(w => w.length > 0).length;
