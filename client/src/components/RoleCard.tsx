@@ -371,13 +371,13 @@ export function RoleCard({
                   </div>
                 )}
 
-                {/* Text area - no label, just placeholder */}
+                {/* Text area - subtle border for visibility */}
                 <textarea
                   value={additionalText}
                   onChange={(e) => setAdditionalText(e.target.value)}
                   onFocus={handleTextareaFocus}
                   placeholder={currentStarter}
-                  className="w-full p-4 text-sm rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic border-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
+                  className="w-full p-4 text-sm rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic border border-gray-200 dark:border-gray-600"
                   rows={3}
                   disabled={isProcessing}
                 />
@@ -392,7 +392,7 @@ export function RoleCard({
                       transition={{ duration: 0.15 }}
                       className="overflow-hidden"
                     >
-                      <div className="pt-2 space-y-4">
+                      <div className="pt-2">
                         {/* Outcome pickers - selectable tags like claim blocks */}
                         <div className="flex flex-wrap gap-2">
                           {OUTCOME_PICKERS.map((picker) => {
@@ -418,20 +418,6 @@ export function RoleCard({
                             );
                           })}
                         </div>
-
-                        {/* Gardener draft option */}
-                        <button
-                          onClick={handleGardenerDraft}
-                          disabled={isGeneratingDraft}
-                          className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
-                        >
-                          {isGeneratingDraft ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Wand2 className="w-4 h-4" />
-                          )}
-                          <span>{language === 'da' ? 'Prøv et AI-udkast' : 'Try an AI draft'}</span>
-                        </button>
                       </div>
                     </motion.div>
                   )}
@@ -439,16 +425,33 @@ export function RoleCard({
 
                 {/* Actions */}
                 <div className="flex items-center justify-between pt-2">
-                  {/* "Need more help?" - quiet reveal trigger */}
-                  <button
-                    onClick={() => setShowPowerTools(!showPowerTools)}
-                    className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
-                  >
-                    {showPowerTools
-                      ? (language === 'da' ? 'Skjul' : 'Hide')
-                      : (language === 'da' ? 'Brug for mere hjælp?' : 'Need more help?')
-                    }
-                  </button>
+                  {/* Left side: AI Draft button + toggle */}
+                  <div className="flex items-center gap-3">
+                    {/* AI Draft - bordered button */}
+                    <button
+                      onClick={handleGardenerDraft}
+                      disabled={isGeneratingDraft}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
+                    >
+                      {isGeneratingDraft ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="w-4 h-4" />
+                      )}
+                      <span>{language === 'da' ? 'AI-udkast' : 'AI draft'}</span>
+                    </button>
+
+                    {/* "Need more help?" - quiet reveal trigger */}
+                    <button
+                      onClick={() => setShowPowerTools(!showPowerTools)}
+                      className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
+                    >
+                      {showPowerTools
+                        ? (language === 'da' ? 'Skjul ekstra' : 'Hide extra')
+                        : (language === 'da' ? 'Brug for mere hjælp?' : 'Need more help?')
+                      }
+                    </button>
+                  </div>
 
                   <div className="flex items-center gap-4">
                     {/* Back as text link */}
