@@ -220,18 +220,82 @@ export async function extractPdfText(buffer: Buffer): Promise<ExtractionResult> 
 }
 
 // ============================================
+// WORD DOCUMENT AI EXTRACTION
+// ============================================
+
+async function extractWordWithDocumentAI(buffer: Buffer, mimeType: string): Promise<string | null> {
+  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  const processorId = process.env.GOOGLE_DOCUMENT_AI_PROCESSOR_ID;
+
+  if (!credentialsJson || !processorId) {
+    console.log('[Word] No Google credentials configured - skipping Document AI');
+    return null;
+  }
+
+  try {
+    const credentials = JSON.parse(credentialsJson);
+    const client = new DocumentProcessorServiceClient({
+      credentials,
+      apiEndpoint: 'eu-documentai.googleapis.com',
+    });
+
+    const projectId = credentials.project_id;
+    const location = 'eu';
+    const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
+
+    // Document AI accepts Word documents directly
+    const docMimeType = mimeType === 'application/msword'
+      ? 'application/msword'
+      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    const request = {
+      name,
+      rawDocument: {
+        content: buffer.toString('base64'),
+        mimeType: docMimeType,
+      },
+    };
+
+    console.log('[Word] Sending to Document AI...');
+    const [result] = await client.processDocument(request);
+    const text = result.document?.text || null;
+
+    if (text) {
+      console.log('[Word] Document AI extraction successful:', text.length, 'characters');
+    }
+
+    return text;
+  } catch (error) {
+    console.error('[Word] Document AI extraction failed:', error);
+    return null;
+  }
+}
+
+// ============================================
 // WORD DOCUMENT EXTRACTION
 // ============================================
 
 export async function extractWordText(buffer: Buffer, mimeType: string): Promise<ExtractionResult> {
   const warnings: string[] = [];
+  const isLegacyDoc = mimeType === 'application/msword';
 
-  // Check for old .doc format
-  if (mimeType === 'application/msword') {
-    warnings.push('Legacy .doc format detected - extraction may be limited');
-    console.log('[Word] Legacy .doc format - attempting extraction...');
+  // For legacy .doc files, try Document AI FIRST (mammoth struggles with .doc)
+  if (isLegacyDoc) {
+    warnings.push('Legacy .doc format detected');
+    console.log('[Word] Legacy .doc format - trying Document AI first');
+
+    const docAIText = await extractWordWithDocumentAI(buffer, mimeType);
+    if (docAIText && docAIText.length > MIN_TEXT_FOR_SUCCESS) {
+      return {
+        text: docAIText,
+        method: 'ocr', // 'ocr' indicates Document AI was used
+        warnings,
+      };
+    }
+    console.log('[Word] Document AI failed for .doc, falling back to mammoth');
   }
 
+  // Try mammoth extraction
   try {
     console.log('[Word] Attempting mammoth extraction...');
     const result = await mammoth.extractRawText({ buffer });
@@ -247,22 +311,63 @@ export async function extractWordText(buffer: Buffer, mimeType: string): Promise
 
     const text = result.value.trim();
 
-    if (text.length < MIN_TEXT_FOR_SUCCESS) {
-      warnings.push('Very little text extracted from document');
-      console.log('[Word] Minimal extraction:', text.length, 'chars');
-    } else {
-      console.log('[Word] Extraction successful:', text.length, 'chars');
+    // If mammoth got good text, return it
+    if (text.length >= MIN_TEXT_FOR_SUCCESS) {
+      console.log('[Word] mammoth extraction successful:', text.length, 'chars');
+      return {
+        text,
+        method: 'mammoth',
+        warnings,
+      };
+    }
+
+    // Mammoth got minimal text - try Document AI (for .docx only, we already tried for .doc)
+    if (!isLegacyDoc) {
+      console.log('[Word] mammoth extraction minimal (' + text.length + ' chars), trying Document AI...');
+      warnings.push('Standard extraction got minimal text, attempting Document AI');
+
+      const docAIText = await extractWordWithDocumentAI(buffer, mimeType);
+      if (docAIText && docAIText.length > MIN_TEXT_FOR_SUCCESS) {
+        return {
+          text: docAIText,
+          method: 'ocr',
+          warnings,
+        };
+      }
+    }
+
+    // Return whatever mammoth got
+    if (text) {
+      warnings.push('Document AI did not improve extraction');
+      return {
+        text,
+        method: 'fallback',
+        warnings,
+      };
     }
 
     return {
-      text,
-      method: 'mammoth',
-      warnings,
+      text: '',
+      method: 'fallback',
+      warnings: [...warnings, 'Could not extract text from Word document'],
     };
 
   } catch (error) {
     console.error('[Word] mammoth extraction failed:', error);
     warnings.push(`Word extraction error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+    // Try Document AI as last resort (for .docx - we already tried for .doc above)
+    if (!isLegacyDoc) {
+      console.log('[Word] Trying Document AI after mammoth failure...');
+      const docAIText = await extractWordWithDocumentAI(buffer, mimeType);
+      if (docAIText) {
+        return {
+          text: docAIText,
+          method: 'ocr',
+          warnings,
+        };
+      }
+    }
 
     return {
       text: '',
