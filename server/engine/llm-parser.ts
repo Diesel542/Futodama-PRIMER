@@ -20,6 +20,7 @@ CRITICAL RULES:
 - If a section has no clear type, use "other"
 - Preserve the original language of the content
 - Be thorough - don't skip sections
+- Keep content concise - summarize very long sections if needed to fit response limits
 
 Respond with valid JSON only, no markdown, no explanation.`;
 
@@ -34,6 +35,13 @@ interface ParsedSection {
 
 interface LLMParseResponse {
   sections: ParsedSection[];
+}
+
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1000;
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export async function parseWithLLM(
@@ -72,84 +80,203 @@ Return a JSON object with this structure:
   ]
 }`;
 
-  try {
-    console.log(`LLM Parser: Starting parse with model ${model}, text length: ${truncatedText.length}`);
-    const response = await anthropic.messages.create({
-      model: model,
-      max_tokens: 4000,
-      system: PARSER_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    console.log(`LLM Parser: Got response, stop_reason: ${response.stop_reason}`);
+  let lastError: Error | null = null;
 
-    const text = response.content[0];
-    if (text.type !== 'text') {
-      throw new Error('Unexpected response type');
-    }
-
-    // Parse the JSON response
-    let parsed: LLMParseResponse;
+  for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
     try {
-      // Clean up potential markdown code blocks
-      const cleanJson = text.text
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
-      parsed = JSON.parse(cleanJson);
-    } catch (jsonError) {
-      console.error('Failed to parse LLM response as JSON:', text.text.substring(0, 500));
-      console.error('JSON parse error:', jsonError);
-      warnings.push('LLM response was not valid JSON, falling back to basic parsing');
-      return fallbackParse(rawText, warnings);
-    }
+      console.log(`[LLM Parser] Attempt ${attempt}/${MAX_RETRIES + 1}, model: ${model}, text length: ${truncatedText.length}`);
 
-    // Convert to CVSection format
-    const sections: CVSection[] = parsed.sections.map((s, index) => {
-      const wordCount = s.content.split(/\s+/).filter(w => w.length > 0).length;
+      const response = await anthropic.messages.create({
+        model: model,
+        max_tokens: 8000, // Increased from 4000 to handle long CVs
+        system: PARSER_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: prompt }],
+      });
 
-      // Parse dates
-      const startDate = parseDate(s.startDate);
-      const endDate = parseDate(s.endDate);
+      console.log(`[LLM Parser] Got response, stop_reason: ${response.stop_reason}`);
 
-      // Calculate duration
-      let duration: number | undefined;
-      if (startDate && endDate) {
-        duration = calculateMonthsDifference(startDate, endDate);
+      // Check if response was truncated
+      if (response.stop_reason === 'max_tokens') {
+        console.warn('[LLM Parser] Response truncated due to max_tokens limit');
+        warnings.push('LLM response was truncated - CV may be too complex');
+
+        // Try to salvage partial JSON
+        const text = response.content[0];
+        if (text.type === 'text') {
+          const partialResult = tryParsePartialJSON(text.text, warnings);
+          if (partialResult && partialResult.sections.length > 0) {
+            console.log(`[LLM Parser] Salvaged ${partialResult.sections.length} sections from truncated response`);
+            return convertToParseResult(partialResult.sections, rawText, warnings, 'medium');
+          }
+        }
+
+        // If we can't salvage, continue to retry or fallback
+        if (attempt <= MAX_RETRIES) {
+          console.log(`[LLM Parser] Will retry with shorter content...`);
+          // Could implement content shortening here for retry
+        }
+        continue;
       }
 
-      return {
-        id: `section-${index}-${uuidv4().slice(0, 8)}`,
-        type: s.type,
-        title: s.title,
-        organization: s.organization,
-        startDate,
-        endDate,
-        duration,
-        content: s.content,
-        wordCount,
-        parseConfidence: 'high' as const, // LLM parsing is high confidence
-      };
-    });
+      const text = response.content[0];
+      if (text.type !== 'text') {
+        throw new Error('Unexpected response type');
+      }
 
-    // Validate we got something useful
-    if (sections.length === 0) {
-      warnings.push('LLM did not identify any sections');
-      return fallbackParse(rawText, warnings);
+      // Parse the JSON response
+      let parsed: LLMParseResponse;
+      try {
+        // Clean up potential markdown code blocks
+        const cleanJson = text.text
+          .replace(/```json\n?/g, '')
+          .replace(/```\n?/g, '')
+          .trim();
+
+        console.log(`[LLM Parser] Parsing JSON response (${cleanJson.length} chars)`);
+        parsed = JSON.parse(cleanJson);
+      } catch (jsonError) {
+        console.error('[LLM Parser] Failed to parse LLM response as JSON');
+        console.error('[LLM Parser] JSON error:', jsonError);
+        console.error('[LLM Parser] Response preview:', text.text.substring(0, 500));
+
+        // Try to salvage partial JSON
+        const partialResult = tryParsePartialJSON(text.text, warnings);
+        if (partialResult && partialResult.sections.length > 0) {
+          console.log(`[LLM Parser] Salvaged ${partialResult.sections.length} sections from malformed JSON`);
+          return convertToParseResult(partialResult.sections, rawText, warnings, 'medium');
+        }
+
+        warnings.push('LLM response was not valid JSON');
+
+        if (attempt <= MAX_RETRIES) {
+          console.log(`[LLM Parser] Retrying after JSON parse failure...`);
+          await sleep(RETRY_DELAY_MS);
+          continue;
+        }
+
+        return fallbackParse(rawText, warnings);
+      }
+
+      // Validate we got something useful
+      if (!parsed.sections || parsed.sections.length === 0) {
+        warnings.push('LLM did not identify any sections');
+
+        if (attempt <= MAX_RETRIES) {
+          console.log(`[LLM Parser] No sections found, retrying...`);
+          await sleep(RETRY_DELAY_MS);
+          continue;
+        }
+
+        return fallbackParse(rawText, warnings);
+      }
+
+      console.log(`[LLM Parser] Successfully parsed ${parsed.sections.length} sections`);
+      return convertToParseResult(parsed.sections, rawText, warnings, 'high');
+
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`[LLM Parser] Attempt ${attempt} failed:`, lastError.message);
+
+      // Check for rate limiting
+      if (lastError.message.includes('rate') || lastError.message.includes('429')) {
+        console.log(`[LLM Parser] Rate limited, waiting before retry...`);
+        await sleep(RETRY_DELAY_MS * 2);
+      } else if (attempt <= MAX_RETRIES) {
+        await sleep(RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  // All retries exhausted
+  console.error('[LLM Parser] All attempts failed');
+  warnings.push(`LLM parsing failed after ${MAX_RETRIES + 1} attempts: ${lastError?.message || 'Unknown error'}`);
+  return fallbackParse(rawText, warnings);
+}
+
+function tryParsePartialJSON(text: string, warnings: string[]): LLMParseResponse | null {
+  try {
+    // Clean markdown
+    let cleanJson = text
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+
+    // Try to find complete sections array even if response was truncated
+    const sectionsMatch = cleanJson.match(/"sections"\s*:\s*\[/);
+    if (!sectionsMatch) return null;
+
+    // Find all complete section objects
+    const sections: ParsedSection[] = [];
+    const sectionRegex = /\{\s*"type"\s*:\s*"([^"]+)"\s*,\s*"title"\s*:\s*"([^"]+)"[^}]*"content"\s*:\s*"([^"]*)"[^}]*\}/g;
+
+    let match;
+    while ((match = sectionRegex.exec(cleanJson)) !== null) {
+      try {
+        // Try to parse this section as valid JSON
+        const sectionStr = match[0];
+        const section = JSON.parse(sectionStr);
+        if (section.type && section.title) {
+          sections.push(section);
+        }
+      } catch {
+        // Skip malformed sections
+      }
+    }
+
+    if (sections.length > 0) {
+      warnings.push(`Recovered ${sections.length} sections from partial response`);
+      return { sections };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function convertToParseResult(
+  sections: ParsedSection[],
+  rawText: string,
+  warnings: string[],
+  confidence: 'high' | 'medium' | 'low'
+): ParseResult {
+  const cvSections: CVSection[] = sections.map((s, index) => {
+    const wordCount = s.content.split(/\s+/).filter(w => w.length > 0).length;
+
+    // Parse dates
+    const startDate = parseDate(s.startDate);
+    const endDate = parseDate(s.endDate);
+
+    // Calculate duration
+    let duration: number | undefined;
+    if (startDate && endDate) {
+      duration = calculateMonthsDifference(startDate, endDate);
     }
 
     return {
-      sections,
-      unparsedContent: [],
-      warnings,
-      overallConfidence: 'high',
-      rawText, // Preserve original for display
+      id: `section-${index}-${uuidv4().slice(0, 8)}`,
+      type: s.type,
+      title: s.title,
+      organization: s.organization,
+      startDate,
+      endDate,
+      duration,
+      content: s.content,
+      wordCount,
+      parseConfidence: confidence,
     };
+  });
 
-  } catch (error) {
-    console.error('LLM parsing failed:', error);
-    warnings.push(`LLM parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    return fallbackParse(rawText, warnings);
-  }
+  console.log(`[LLM Parser] Converted ${cvSections.length} sections:`,
+    cvSections.map(s => `${s.type}: "${s.title}" (${s.wordCount} words)`).join(', '));
+
+  return {
+    sections: cvSections,
+    unparsedContent: [],
+    warnings,
+    overallConfidence: confidence,
+    rawText,
+  };
 }
 
 function parseDate(dateStr?: string): string | undefined {
@@ -193,8 +320,8 @@ function calculateMonthsDifference(start: string, end: string): number {
 
 function fallbackParse(rawText: string, warnings: string[]): ParseResult {
   // Simple fallback: treat entire text as one section
-  console.warn('FALLBACK PARSER TRIGGERED - warnings:', warnings);
   warnings.push('Using fallback parser - CV structure could not be determined');
+  console.warn('[LLM Parser] FALLBACK TRIGGERED - warnings:', warnings);
 
   const wordCount = rawText.split(/\s+/).filter(w => w.length > 0).length;
 
