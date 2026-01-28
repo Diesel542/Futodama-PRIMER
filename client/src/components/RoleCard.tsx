@@ -83,7 +83,6 @@ export function RoleCard({
   const isExpanded = controlledExpanded ?? internalExpanded;
 
   const [layer, setLayer] = useState<EditingLayer>('nudge');
-  const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
   const [additionalText, setAdditionalText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [starterIndex, setStarterIndex] = useState(0);
@@ -92,15 +91,18 @@ export function RoleCard({
   const [showPowerTools, setShowPowerTools] = useState(false);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [selectedOutcomes, setSelectedOutcomes] = useState<Set<string>>(new Set());
+  const [showAllClaims, setShowAllClaims] = useState(false);
+  const [insertedClaims, setInsertedClaims] = useState<Set<string>>(new Set());
 
   // Reset layer state when card is closed externally
   useEffect(() => {
     if (!isExpanded && layer !== 'nudge') {
       setLayer('nudge');
-      setSelectedClaims(new Set());
+      setInsertedClaims(new Set());
       setSelectedOutcomes(new Set());
       setAdditionalText('');
       setShowPowerTools(false);
+      setShowAllClaims(false);
     }
   }, [isExpanded]);
 
@@ -112,10 +114,11 @@ export function RoleCard({
     }
     if (isExpanded) {
       setLayer('nudge');
-      setSelectedClaims(new Set());
+      setInsertedClaims(new Set());
       setSelectedOutcomes(new Set());
       setAdditionalText('');
       setShowPowerTools(false);
+      setShowAllClaims(false);
     }
   };
 
@@ -140,42 +143,41 @@ export function RoleCard({
     setLayer('assist');
   };
 
-  const handleClaimToggle = (claim: string) => {
-    setSelectedClaims(prev => {
-      const next = new Set(prev);
-      if (next.has(claim)) {
-        next.delete(claim);
-      } else {
-        next.add(claim);
+  const handleClaimInsert = (claim: string) => {
+    // Don't insert twice
+    if (insertedClaims.has(claim)) return;
+
+    // Insert into textarea
+    setAdditionalText(prev => {
+      if (prev.trim()) {
+        return prev + '\n' + claim;
       }
-      return next;
+      return claim;
     });
+
+    // Mark as inserted (shows checkmark)
+    setInsertedClaims(prev => new Set([...prev, claim]));
   };
 
   const handleGeneratePreview = async () => {
-    if (!observation || (selectedClaims.size === 0 && selectedOutcomes.size === 0 && !additionalText.trim())) return;
+    if (!observation || (selectedOutcomes.size === 0 && !additionalText.trim())) return;
 
     setIsProcessing(true);
 
-    // Filter out unfilled placeholders from claims
-    const cleanedClaims = Array.from(selectedClaims).filter(claim => !claim.includes('___'));
-
-    // Get scaffold text for selected outcomes (these will be completed by AI)
+    // Get scaffold text for selected outcomes
     const outcomeScaffolds = OUTCOME_PICKERS
       .filter(p => selectedOutcomes.has(p.category))
       .map(p => p.scaffold[language as 'en' | 'da'] || p.scaffold.en);
 
-    // Combine claims with outcome scaffolds
-    const allClaims = [...cleanedClaims, ...outcomeScaffolds];
-
+    // Clean text (claims are already in additionalText via insertion)
     const cleanedText = additionalText.includes('___')
       ? additionalText.split('\n').filter(line => !line.includes('___')).join('\n')
       : additionalText;
 
     if (onApplyClaims) {
-      await onApplyClaims(observation.id, allClaims, cleanedText);
+      await onApplyClaims(observation.id, outcomeScaffolds, cleanedText);
     } else {
-      const combinedInput = [...allClaims, cleanedText].filter(Boolean).join('\n');
+      const combinedInput = [...outcomeScaffolds, cleanedText].filter(Boolean).join('\n');
       await onSubmitInput(observation.id, combinedInput);
     }
 
@@ -207,8 +209,9 @@ export function RoleCard({
     if (!observation?.rewrittenContent) return;
     onApply(observation.id, observation.rewrittenContent);
     setLayer('nudge');
-    setSelectedClaims(new Set());
+    setInsertedClaims(new Set());
     setSelectedOutcomes(new Set());
+    setShowAllClaims(false);
     setAdditionalText('');
     setInternalExpanded(false);
   };
@@ -217,8 +220,9 @@ export function RoleCard({
     if (!observation) return;
     onLock(observation.id);
     setLayer('nudge');
-    setSelectedClaims(new Set());
+    setInsertedClaims(new Set());
     setSelectedOutcomes(new Set());
+    setShowAllClaims(false);
     setAdditionalText('');
     setInternalExpanded(false);
   };
@@ -348,26 +352,43 @@ export function RoleCard({
                   {observation.message}
                 </p>
 
-                {/* Claim Blocks - visible as selectable tags */}
+                {/* Claim Blocks - discovered fragments, not buttons */}
                 {guidedEdit?.claimBlocks && guidedEdit.claimBlocks.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {guidedEdit.claimBlocks.map((claim, i) => (
-                      <button
+                  <div className="space-y-1.5">
+                    {(showAllClaims ? guidedEdit.claimBlocks : guidedEdit.claimBlocks.slice(0, 3)).map((claim, i) => (
+                      <motion.button
                         key={i}
-                        onClick={() => handleClaimToggle(claim)}
+                        onClick={() => handleClaimInsert(claim)}
+                        disabled={insertedClaims.has(claim)}
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
                         className={cn(
-                          "px-3 py-2 text-sm rounded-lg transition-all duration-150 border",
-                          selectedClaims.has(claim)
-                            ? "bg-[#E8F5E8] dark:bg-[#1A2F1C] border-green-200 dark:border-green-800 text-gray-800 dark:text-gray-200"
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
+                          "block w-full text-left px-3 py-2 text-sm rounded transition-all duration-150",
+                          insertedClaims.has(claim)
+                            ? "bg-[#E8F5E8]/50 dark:bg-[#1A2F1C]/50 text-gray-500 dark:text-gray-400"
+                            : "bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50"
                         )}
                       >
-                        {selectedClaims.has(claim) && (
-                          <Check className="w-3.5 h-3.5 inline mr-1.5 text-green-600 dark:text-green-500" />
+                        {insertedClaims.has(claim) && (
+                          <Check className="w-3.5 h-3.5 inline mr-2 text-green-600 dark:text-green-500" />
                         )}
                         {claim}
-                      </button>
+                      </motion.button>
                     ))}
+
+                    {/* Show more link if more than 3 */}
+                    {!showAllClaims && guidedEdit.claimBlocks.length > 3 && (
+                      <button
+                        onClick={() => setShowAllClaims(true)}
+                        className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors pt-1"
+                      >
+                        {language === 'da'
+                          ? `Vis ${guidedEdit.claimBlocks.length - 3} flere forslag`
+                          : `Show ${guidedEdit.claimBlocks.length - 3} more suggestions`
+                        }
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -465,7 +486,7 @@ export function RoleCard({
                     {/* One primary action */}
                     <button
                       onClick={handleGeneratePreview}
-                      disabled={(selectedClaims.size === 0 && selectedOutcomes.size === 0 && !additionalText.trim()) || isProcessing}
+                      disabled={(selectedOutcomes.size === 0 && !additionalText.trim()) || isProcessing}
                       className="px-5 py-2 text-sm font-medium bg-[#1a3a2a] text-white rounded-lg hover:bg-[#2a4a3a] transition-colors disabled:opacity-40 flex items-center gap-2"
                     >
                       {isProcessing ? (
