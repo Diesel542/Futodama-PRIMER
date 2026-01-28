@@ -55,6 +55,13 @@ export interface Observation {
 
   // Guided editing (Layer 2)
   guidedEdit?: GuidedEditContext;
+
+  // Contextual label (replaces diagnostic sentences)
+  contextualLabel?: {
+    en: string;
+    da: string;
+  } | null;
+  contextualLabelType?: string | null;
 }
 
 // ============================================

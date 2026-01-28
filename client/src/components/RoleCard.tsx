@@ -54,6 +54,11 @@ interface RoleCardProps {
       sentenceStarters: string[];
       representationStatus: 'too_short' | 'balanced' | 'too_long';
     };
+    contextualLabel?: {
+      en: string;
+      da: string;
+    } | null;
+    contextualLabelType?: string | null;
   };
   isExpanded?: boolean;
   onToggleExpand?: () => void;
@@ -308,10 +313,12 @@ export function RoleCard({
           {/* Layer 1: Nudge */}
           {hasPendingSuggestion && layer === 'nudge' && !isExpanded && (
             <div className="mt-4 space-y-3">
-              {/* Single calm observation sentence */}
-              <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                {observation.message}
-              </p>
+              {/* Contextual label as subtle orientation */}
+              {observation.contextualLabel && (
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                  {observation.contextualLabel[language as 'en' | 'da'] || observation.contextualLabel.en}
+                </p>
+              )}
 
               <button
                 onClick={() => {
@@ -347,10 +354,12 @@ export function RoleCard({
             >
               <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 p-5 space-y-5">
 
-                {/* Single calm sentence - replaces all headings */}
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {observation.message}
-                </p>
+                {/* Contextual label - orientation without explanation */}
+                {observation.contextualLabel && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
+                    {observation.contextualLabel[language as 'en' | 'da'] || observation.contextualLabel.en}
+                  </p>
+                )}
 
                 {/* Claim Blocks - discovered fragments, not buttons */}
                 {guidedEdit?.claimBlocks && guidedEdit.claimBlocks.length > 0 && (
