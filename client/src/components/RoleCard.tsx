@@ -150,11 +150,17 @@ export function RoleCard({
 
     setIsProcessing(true);
 
+    // Filter out any text containing unfilled ___ placeholders
+    const cleanedClaims = Array.from(selectedClaims).filter(claim => !claim.includes('___'));
+    const cleanedText = additionalText.includes('___')
+      ? additionalText.split('\n').filter(line => !line.includes('___')).join('\n')
+      : additionalText;
+
     if (onApplyClaims) {
-      await onApplyClaims(observation.id, Array.from(selectedClaims), additionalText);
+      await onApplyClaims(observation.id, cleanedClaims, cleanedText);
     } else {
       // Fallback to old input method
-      const combinedInput = [...Array.from(selectedClaims), additionalText].filter(Boolean).join('\n');
+      const combinedInput = [...cleanedClaims, cleanedText].filter(Boolean).join('\n');
       await onSubmitInput(observation.id, combinedInput);
     }
 
@@ -439,8 +445,8 @@ export function RoleCard({
                           </div>
 
                           {/* Gardener Draft */}
-                          <div className="pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                          <div className="pt-3 border-t border-gray-200 dark:border-gray-600 mt-3">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">
                               {language === 'da'
                                 ? 'Eller spring valgene over:'
                                 : 'Or skip the selections:'}
@@ -448,16 +454,21 @@ export function RoleCard({
                             <button
                               onClick={handleGardenerDraft}
                               disabled={isGeneratingDraft || !onRequestGardenerDraft}
-                              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+                              className="w-full px-4 py-2.5 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                               {isGeneratingDraft ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  {language === 'da' ? 'Genererer...' : 'Generating...'}
+                                </>
                               ) : (
-                                <Wand2 className="w-4 h-4" />
+                                <>
+                                  <Wand2 className="w-4 h-4" />
+                                  {language === 'da' ? 'Lad AI skrive helt fra bunden' : 'Let AI write from scratch'}
+                                </>
                               )}
-                              {language === 'da' ? 'Lad AI skrive helt fra bunden' : 'Let AI write from scratch'}
                             </button>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-6">
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">
                               {language === 'da'
                                 ? 'AI foreslår en komplet tekst baseret på din nuværende rollebeskrivelse'
                                 : 'AI proposes complete text based on your current role description'}
