@@ -76,13 +76,13 @@ export function RoleCard({
   const handleApply = () => {
     if (!observation?.rewrittenContent) return;
     onApply(observation.id, observation.rewrittenContent);
-    setIsExpanded(false);
+    setInternalExpanded(false);
   };
 
   const handleLock = () => {
     if (!observation) return;
     onLock(observation.id);
-    setIsExpanded(false);
+    setInternalExpanded(false);
   };
 
   return (
@@ -213,7 +213,7 @@ export function RoleCard({
                     />
                     <div className="flex gap-2 justify-end">
                       <button
-                        onClick={() => setIsExpanded(false)}
+                        onClick={() => setInternalExpanded(false)}
                         className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                       >
                         {t('complete.back')}

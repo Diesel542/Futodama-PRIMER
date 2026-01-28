@@ -115,6 +115,5 @@ export const RewriteRequestSchema = z.object({
 });
 
 export const ObservationRespondSchema = z.object({
-  observationId: z.string().min(1),
   response: z.enum(['accepted', 'declined', 'locked']),
 });
